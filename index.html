@@ -1,1 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Koziky Games Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Koziky Games</h1>
+    <input type="text" id="searchInput" placeholder="Search games...">
+  </header>
 
+  <main id="gameContainer" class="game-grid">
+    <!-- Sample Game Cards -->
+    <div class="game-card" data-name="Tunnel Rush">
+      <img src="https://via.placeholder.com/200x120?text=Tunnel+Rush" alt="Tunnel Rush">
+      <h2>Tunnel Rush</h2>
+      <button onclick="launchGame('https://example.com/tunnelrush')">▶ Play</button>
+    </div>
+
+    <div class="game-card" data-name="Slope">
+      <img src="https://via.placeholder.com/200x120?text=Slope" alt="Slope">
+      <h2>Slope</h2>
+      <button onclick="launchGame('https://example.com/slope')">▶ Play</button>
+    </div>
+
+    <div class="game-card" data-name="Retro Bowl">
+      <img src="https://via.placeholder.com/200x120?text=Retro+Bowl" alt="Retro Bowl">
+      <h2>Retro Bowl</h2>
+      <button onclick="launchGame('https://example.com/retrobowl')">▶ Play</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Koziky Games | Stay unblocked 😎</p>
+  </footer>
+</body>
+</html>
