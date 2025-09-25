@@ -1,7 +1,7 @@
 // Add your videos here.
 // Put the video files inside the "videos" folder.
 const videos = [
-  { title: "My First Video", file: "videos/video1.mp4" },
+  { title: "My First Video", file: ""C:\Users\kozik\Videos\[DownPorn.net]_720P_4000K_456864701.mp4"" },
   // You can add more like this:
   // { title: "Second Clip", file: "videos/video2.mp4" }
 ];
