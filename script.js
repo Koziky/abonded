@@ -1,6 +1,6 @@
 // Example videos (put your video files in a "videos/" folder)
 const videos = [
-  { title: "Sample Video 1", file: "videos/video1.mp4" },
+  { title: "Sample Video 1", file: ""C:\Users\kozik\Downloads\[DownPorn.net]_720P_4000K_456864701.mp4"" },
   { title: "Sample Video 2", file: "videos/video2.mp4" },
   { title: "Sample Video 3", file: "videos/video3.mp4" }
 ];
