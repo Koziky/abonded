@@ -1,22 +1,69 @@
-// Add your videos here.
-// Put the video files inside the "videos" folder.
-const videos = [
-  { title: "My First Video", file: ""C:\Users\kozik\Videos\[DownPorn.net]_720P_4000K_456864701.mp4"" },
-  // You can add more like this:
-  // { title: "Second Clip", file: "videos/video2.mp4" }
-];
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('play');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const playlist = document.getElementById('playlist');
+const trackName = document.getElementById('track-name');
 
-const gallery = document.getElementById("video-gallery");
+let tracks = Array.from(playlist.querySelectorAll('li'));
+let currentTrackIndex = 0;
 
-videos.forEach(video => {
-  const card = document.createElement("div");
-  card.classList.add("video-card");
-  card.innerHTML = `
-    <h2>${video.title}</h2>
-    <video controls>
-      <source src="${video.file}" type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
-  `;
-  gallery.appendChild(card);
+// Load initial track
+function loadTrack(index) {
+    const track = tracks[index];
+    audio.src = track.dataset.src;
+    trackName.textContent = track.textContent;
+    updateActiveTrack();
+}
+
+// Play or pause
+playBtn.addEventListener('click', () => {
+    if (audio.paused) {
+        audio.play();
+        playBtn.textContent = '⏸';
+    } else {
+        audio.pause();
+        playBtn.textContent = '▶';
+    }
 });
+
+// Previous track
+prevBtn.addEventListener('click', () => {
+    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    loadTrack(currentTrackIndex);
+    audio.play();
+    playBtn.textContent = '⏸';
+});
+
+// Next track
+nextBtn.addEventListener('click', () => {
+    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+    loadTrack(currentTrackIndex);
+    audio.play();
+    playBtn.textContent = '⏸';
+});
+
+// Playlist click
+tracks.forEach((track, index) => {
+    track.addEventListener('click', () => {
+        currentTrackIndex = index;
+        loadTrack(index);
+        audio.play();
+        playBtn.textContent = '⏸';
+    });
+});
+
+// Highlight current track
+function updateActiveTrack() {
+    tracks.forEach((track, index) => {
+        track.style.background = index === currentTrackIndex ? '#ff4f5a' : 'transparent';
+    });
+}
+
+// Auto-next when song ends
+audio.addEventListener('ended', () => {
+    nextBtn.click();
+});
+
+// Initialize
+loadTrack(currentTrackIndex);
