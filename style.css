@@ -1,62 +1,91 @@
 body {
     font-family: 'Arial', sans-serif;
-    background: #1e1e1e;
+    background: #121212;
     color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
+    padding: 0;
 }
 
-.player {
-    background: #2c2c2c;
-    padding: 30px;
-    border-radius: 12px;
+.player-container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
     text-align: center;
-    width: 300px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-.current-track {
+.input-section {
     margin-bottom: 20px;
 }
 
-#track-name {
-    margin-bottom: 10px;
+.input-section input {
+    width: 70%;
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    margin-right: 5px;
+}
+
+.input-section button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    background: #ff4f5a;
+    color: white;
+    cursor: pointer;
+}
+
+#cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.song-card {
+    background: #1f1f1f;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.song-card:hover {
+    transform: scale(1.05);
+}
+
+.song-card img {
+    width: 100%;
+    display: block;
+}
+
+.song-card .song-title {
+    padding: 10px;
+    font-size: 14px;
     font-weight: bold;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .controls button {
     background: #ff4f5a;
     border: none;
-    padding: 10px 15px;
-    margin: 0 5px;
+    padding: 8px 12px;
     border-radius: 50%;
     color: #fff;
     font-size: 16px;
     cursor: pointer;
-    transition: background 0.3s;
 }
 
-.controls button:hover {
-    background: #ff1c30;
+.controls input[type=range] {
+    width: 100px;
 }
 
-#playlist {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-    text-align: left;
-}
-
-#playlist li {
-    padding: 8px;
-    cursor: pointer;
-    border-bottom: 1px solid #444;
-    transition: background 0.3s;
-}
-
-#playlist li:hover {
-    background: #444;
+#player {
+    display: none; /* hidden iframe player */
 }
