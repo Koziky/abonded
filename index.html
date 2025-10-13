@@ -1,19 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Video Gallery</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad-Free Music Player</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>My Video Gallery</h1>
-    <p>Click play and watch directly in the site:</p>
+    <div class="player">
+        <h1>My Music Player</h1>
+        <div class="current-track">
+            <div id="track-name">Select a song</div>
+            <audio id="audio" controls></audio>
+        </div>
+        <div class="controls">
+            <button id="prev">&#9664;</button>
+            <button id="play">&#9654;</button>
+            <button id="next">&#9654;&#9654;</button>
+        </div>
+        <ul id="playlist">
+            <li data-src="songs/song1.mp3">Song 1</li>
+            <li data-src="songs/song2.mp3">Song 2</li>
+            <li data-src="songs/song3.mp3">Song 3</li>
+        </ul>
+    </div>
 
-    <div id="video-gallery"></div>
-  </div>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
