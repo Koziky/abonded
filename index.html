@@ -1,40 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Koziky Music Player</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Koziky — Music (Spotify-like)</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="player-container">
-    <header class="header">
-      <h1>Koziky Music Player</h1>
-      <div class="add-section">
-        <input type="text" id="yt-link" placeholder="Paste YouTube link..." />
-        <button id="add-btn" class="btn">Add</button>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">Koziky</div>
+      <nav class="nav">
+        <button class="nav-btn active">Home</button>
+        <button class="nav-btn">Search</button>
+        <button class="nav-btn">Your Library</button>
+      </nav>
+      <div class="mini-player">
+        <div class="mini-thumb" id="mini-thumb"></div>
+        <div class="mini-info">
+          <div id="mini-title">Nothing playing</div>
+          <div id="mini-artist">—</div>
+        </div>
+        <button id="mini-play" class="icon-btn">▶</button>
       </div>
-    </header>
+    </aside>
 
-    <main class="playlist" id="playlist">
-      <p class="empty">No songs added yet. Paste a YouTube link above!</p>
+    <main class="main">
+      <header class="topbar">
+        <div class="left-controls">
+          <div class="add-area">
+            <input id="yt-input" placeholder="Paste YouTube link (or youtu.be) and press Add" />
+            <button id="add-song" class="add-btn">Add</button>
+          </div>
+        </div>
+
+        <div class="right-controls">
+          <input id="search-local" placeholder="Search playlist..." />
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="now-playing-area">
+          <img id="now-thumb" class="large-thumb" alt="thumb" />
+          <div class="now-meta">
+            <div id="now-title" class="now-title">No song playing</div>
+            <div id="now-sub" class="now-sub">Add a song to start</div>
+
+            <div class="player-controls">
+              <button id="prev" class="control circle">⏮</button>
+              <button id="play" class="control big">▶</button>
+              <button id="next" class="control circle">⏭</button>
+
+              <div class="progress">
+                <input id="seek" type="range" min="0" max="100" value="0" />
+                <div class="time-row"><span id="curtime">0:00</span><span id="durtime">0:00</span></div>
+              </div>
+
+              <div class="vol">
+                <input id="volume" type="range" min="0" max="100" value="50" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="playlist-area">
+          <div class="playlist-header">
+            <h2>Your Playlist</h2>
+            <div id="playlist-count">0</div>
+          </div>
+          <div id="playlist" class="playlist-list"></div>
+        </div>
+      </section>
     </main>
-
-    <footer class="footer">
-      <div class="now-playing" id="now-playing">Not Playing</div>
-      <div class="controls">
-        <button id="prev-btn" class="control-btn"><span class="icon">⏮</span></button>
-        <button id="play-btn" class="control-btn play"><span class="icon">▶</span></button>
-        <button id="pause-btn" class="control-btn pause"><span class="icon">⏸</span></button>
-        <button id="next-btn" class="control-btn"><span class="icon">⏭</span></button>
-      </div>
-    </footer>
-
-    <div class="video-wrapper">
-      <iframe id="yt-player" src="" frameborder="0" allow="autoplay; encrypted-media"></iframe>
-    </div>
   </div>
 
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>
 </body>
 </html>
