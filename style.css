@@ -33,37 +33,55 @@ body {
 
 /* Header */
 .header {
-    text-align: center;
-    margin-bottom: 3rem;
+    background: var(--bg-secondary);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.header-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.header-title {
-    font-size: 3rem;
-    font-weight: bold;
+.header h1 {
+    font-size: 1.5rem;
     background: linear-gradient(135deg, var(--primary), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 0.5rem;
 }
 
-.header-subtitle {
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Current Playlist Indicator */
+.current-playlist {
+    background: var(--bg-secondary);
+    padding: 0.75rem 2rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    font-size: 1.125rem;
+}
+
+.current-playlist strong {
+    color: var(--accent);
+}
+
+/* Main Content */
+.main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 /* Actions */
-.actions {
+.action-buttons {
     display: flex;
-    justify-content: center;
     gap: 1rem;
-    margin-bottom: 3rem;
-    flex-wrap: wrap;
+    margin-bottom: 2rem;
 }
 
 .btn {
@@ -74,7 +92,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
 }
@@ -86,17 +104,33 @@ body {
 
 .btn-primary:hover {
     box-shadow: 0 0 30px var(--glow);
-    transform: translateY(-2px);
+    transform: scale(1.05);
 }
 
-.btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
+.btn-secondary {
+    background: var(--bg-card);
     color: var(--text-primary);
+    border: 1px solid var(--border);
 }
 
-.btn-outline:hover {
+.btn-secondary:hover {
     border-color: var(--primary);
+}
+
+.input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--accent);
 }
 
 /* Songs Grid */
@@ -112,7 +146,6 @@ body {
     border-radius: 1rem;
     overflow: hidden;
     transition: all 0.3s;
-    cursor: pointer;
 }
 
 .song-card:hover {
@@ -147,6 +180,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
 }
 
 .song-card:hover .song-card-overlay {
@@ -154,29 +188,27 @@ body {
 }
 
 .play-btn {
-    width: 4rem;
-    height: 4rem;
+    width: 3rem;
+    height: 3rem;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary), var(--accent));
     border: none;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .play-btn:hover {
     box-shadow: 0 0 30px rgba(233, 77, 159, 0.5);
+    transform: scale(1.1);
 }
 
-.delete-btn {
+.delete-btn, .add-playlist-btn {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-    background: #dc2626;
     border: none;
     color: white;
     cursor: pointer;
@@ -184,7 +216,20 @@ body {
     transition: opacity 0.3s;
 }
 
-.song-card:hover .delete-btn {
+.delete-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #dc2626;
+}
+
+.add-playlist-btn {
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--primary);
+}
+
+.song-card:hover .delete-btn,
+.song-card:hover .add-playlist-btn {
     opacity: 1;
 }
 
@@ -417,6 +462,7 @@ body {
     border-radius: 0.5rem;
     transition: background 0.2s;
     cursor: pointer;
+    margin-bottom: 0.5rem;
 }
 
 .queue-item:hover {
@@ -474,29 +520,27 @@ body {
 }
 
 /* Dialogs */
-.dialog-overlay {
+.dialog {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.8);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 2000;
 }
 
-.dialog-overlay.show {
+.dialog.show {
     display: flex;
 }
 
-.dialog {
+.dialog-content {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: 1rem;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 80vh;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -505,49 +549,27 @@ body {
     padding: 1.5rem;
     border-bottom: 1px solid var(--border);
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
 }
 
-.dialog-header h3 {
+.dialog-header h2 {
     font-size: 1.25rem;
+    font-weight: 600;
 }
 
-.dialog-content {
+.dialog-body {
     padding: 1.5rem;
     overflow-y: auto;
 }
 
-.dialog-content label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.dialog-content input[type="text"] {
-    width: 100%;
-    padding: 0.75rem;
-    background: rgba(46, 41, 56, 0.5);
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    color: var(--text-primary);
-    font-size: 1rem;
-    margin-bottom: 1rem;
-}
-
-.dialog-content input[type="text"]:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-.playlist-input {
+.playlist-create {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.playlist-input input {
-    flex: 1;
+.playlist-create .input {
     margin-bottom: 0;
 }
 
@@ -555,28 +577,27 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: 300px;
-    overflow-y: auto;
 }
 
 .playlist-item {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
 .playlist-btn {
     flex: 1;
-    padding: 0.75rem;
-    background: transparent;
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     color: var(--text-primary);
     cursor: pointer;
-    text-align: left;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    font-size: 1rem;
 }
 
 .playlist-btn:hover {
@@ -584,22 +605,80 @@ body {
 }
 
 .playlist-btn.active {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    background: rgba(157, 93, 219, 0.1);
+    border-color: var(--primary);
+}
+
+.playlist-btn span {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
 
 .playlist-delete {
-    padding: 0.75rem;
     background: #dc2626;
     border: none;
-    border-radius: 0.5rem;
     color: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
     cursor: pointer;
+    font-size: 1rem;
+}
+
+/* Search Results */
+.search-results {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.search-result-item:hover {
+    border-color: var(--primary);
+}
+
+.search-result-item img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-channel {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
     .player-content {
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 1rem;
     }
     
@@ -607,8 +686,8 @@ body {
         width: 100%;
     }
     
-    .songs-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 1rem;
+    .queue-sidebar {
+        width: 100%;
+        right: -100%;
     }
 }
