@@ -1,51 +1,101 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Koziky Music</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Koziky — Spotify-like Player</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="layout">
-    <!-- Sidebar -->
+  <div class="app">
     <aside class="sidebar">
-      <h2>Koziky</h2>
-      <nav>
+      <div class="brand">
+        <div class="logo">🎵</div>
+        <div class="brand-text">Koziky</div>
+      </div>
+
+      <nav class="side-nav">
         <button class="nav-btn active">Home</button>
+        <button class="nav-btn">Search</button>
         <button class="nav-btn">Your Library</button>
-        <button class="nav-btn">Liked Songs</button>
       </nav>
+
+      <div class="library-quick">
+        <div class="card">
+          <div class="card-title">Create your first playlist</div>
+          <button id="create-playlist" class="pill">Create playlist</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Browse podcasts</div>
+          <button class="pill">Browse</button>
+        </div>
+      </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main">
-      <div class="top-bar">
-        <input type="text" id="yt-link" placeholder="Paste YouTube link..." />
-        <button id="add-btn">Add</button>
-      </div>
+      <header class="topbar">
+        <div class="search-box">
+          <input id="global-search" placeholder="What do you want to play?" />
+        </div>
 
-      <h3 class="section-title">Your Playlist</h3>
-      <div id="playlist" class="playlist">
-        <p class="empty">No songs yet — add one above!</p>
-      </div>
+        <div class="add-area">
+          <input id="yt-input" placeholder="Paste YouTube link (or id) and hit Add" />
+          <button id="add-btn" class="btn">Add</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="section trending">
+          <h2>Trending songs</h2>
+          <div id="trending-row" class="row"></div>
+        </div>
+
+        <div class="section playlist-section">
+          <div class="section-head">
+            <h2>Your Playlist</h2>
+            <div class="controls-inline">
+              <input id="filter" placeholder="Search playlist..." />
+              <div id="playlist-count">0</div>
+            </div>
+          </div>
+          <div id="playlist" class="playlist-list"></div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <!-- Player Bar -->
+  <!-- bottom player bar -->
   <footer class="player-bar">
-    <div class="song-info" id="now-playing">Nothing playing</div>
-    <div class="controls">
-      <button id="prev-btn" class="ctrl-btn">⏮</button>
-      <button id="play-btn" class="ctrl-btn">▶</button>
-      <button id="pause-btn" class="ctrl-btn">⏸</button>
-      <button id="next-btn" class="ctrl-btn">⏭</button>
+    <div class="player-left">
+      <img id="playing-thumb" class="playing-thumb" src="" alt="">
+      <div class="playing-meta">
+        <div id="playing-title">Not Playing</div>
+        <div id="playing-sub" class="muted">—</div>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="controls">
+        <button id="prev-btn" class="icon">⏮</button>
+        <button id="play-btn" class="big">▶</button>
+        <button id="next-btn" class="icon">⏭</button>
+      </div>
+
+      <div class="progress-wrap">
+        <input id="seek" type="range" min="0" max="100" value="0" />
+        <div class="time-row"><span id="curtime">0:00</span><span id="durtime">0:00</span></div>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <input id="volume" type="range" min="0" max="100" value="50" />
     </div>
   </footer>
 
-  <!-- Hidden YouTube Player -->
-  <iframe id="yt-player" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+  <!-- Hidden YouTube player (IFrame API will replace this container) -->
+  <div id="yt-player-container" style="display:none"></div>
 
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>
 </body>
 </html>
