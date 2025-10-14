@@ -1,218 +1,142 @@
-:root {
-    --bg: #0e0f12;
-    --card: #181a1f;
-    --accent: #4d9aff;
-    --accent-glow: 0 0 10px #4d9aff;
-    --text: #fff;
-    --text-secondary: #aaa;
-    --radius: 14px;
-    --border: rgba(255,255,255,0.1);
-    --transition: all 0.25s ease;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Outfit', sans-serif;
+  color: white;
 }
 
-* { box-sizing: border-box; }
 body {
-    margin: 0;
-    font-family: "Poppins", sans-serif;
-    background: radial-gradient(circle at top left, #111218, #090a0d);
-    color: var(--text);
-    min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top left, #121212, #0a0a0a);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Header */
-.header {
-    background: var(--card);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+.app-container {
+  background: #1c1c1c;
+  width: 90%;
+  max-width: 800px;
+  border-radius: 20px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.header h1 { font-size: 1.5rem; }
-.header-actions { display: flex; gap: 0.75rem; }
+
+header {
+  padding: 20px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+  background: #222;
+}
+
+header h1 {
+  margin-bottom: 10px;
+  color: #00b4ff;
+}
+
+.link-input {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.link-input input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: #2c2c2c;
+  color: white;
+}
 
 .btn {
-    border: none;
-    border-radius: var(--radius);
-    padding: 0.6rem 1.2rem;
-    cursor: pointer;
-    transition: var(--transition);
-    font-weight: 500;
+  background: #00b4ff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
 }
-.btn-primary {
-    background: var(--accent);
-    color: white;
-    box-shadow: var(--accent-glow);
-}
-.btn-primary:hover { transform: scale(1.05); }
-.btn-secondary {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-}
-.btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
 
-.main-content { padding: 2rem; }
-
-/* Songs Grid */
-.songs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
+.btn:hover {
+  background: #0092d6;
 }
+
+main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.playlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+
 .song-card {
-    background: var(--card);
-    border-radius: var(--radius);
-    overflow: hidden;
-    position: relative;
-    transition: var(--transition);
-    cursor: pointer;
+  background: #2c2c2c;
+  border-radius: 15px;
+  padding: 10px;
+  text-align: center;
+  transition: 0.3s;
 }
-.song-card:hover { transform: scale(1.03); }
+
+.song-card:hover {
+  background: #383838;
+  transform: translateY(-3px);
+}
+
 .song-card img {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-}
-.song-card-info {
-    padding: 0.8rem 1rem;
-    font-size: 0.9rem;
+  width: 100%;
+  border-radius: 10px;
 }
 
-/* Empty State */
-.empty-state {
-    text-align: center;
-    color: var(--text-secondary);
-    opacity: 0.8;
+.song-card h3 {
+  margin: 10px 0 5px;
+  font-size: 15px;
 }
 
-/* Player */
-.music-player {
-    position: fixed;
-    bottom: 0;
-    left: 0; right: 0;
-    background: var(--card);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.6rem 1rem;
-    z-index: 50;
-}
-.music-player.hidden { display: none; }
-.player-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-.player-info img {
-    width: 55px;
-    height: 55px;
-    border-radius: var(--radius);
-    object-fit: cover;
-}
-.player-title { font-weight: 500; }
-
-.player-controls {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-}
-.control-btn, .control-btn-large {
-    background: none;
-    border: none;
-    cursor: pointer;
-    fill: white;
-    width: 32px;
-    height: 32px;
-    transition: var(--transition);
-}
-.control-btn-large svg { width: 40px; height: 40px; }
-.control-btn:hover svg, .control-btn-large:hover svg {
-    fill: var(--accent);
-    transform: scale(1.1);
-}
-.volume-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.volume-slider { width: 90px; }
-.volume-icon {
-    fill: white;
-    width: 24px; height: 24px;
+footer {
+  padding: 15px;
+  border-top: 1px solid #333;
+  background: #222;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Dialogs */
-.dialog {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
+.controls {
+  display: flex;
+  gap: 15px;
 }
-.dialog.show { display: flex; }
-.dialog-content {
-    background: var(--card);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    width: 90%;
-    max-width: 420px;
-    animation: fadeIn 0.3s ease;
-}
-.dialog-header {
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-}
-.dialog-body { padding: 1rem; }
-.close-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.3rem;
-    cursor: pointer;
-}
-.close-btn:hover { color: var(--accent); }
 
-.input {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: #101217;
-    color: white;
-    margin-bottom: 1rem;
-    outline: none;
+.ctrl-btn {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  background: #00b4ff;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: 0.3s;
 }
-.input:focus { border-color: var(--accent); }
 
-/* Playlist List */
-.playlists-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 250px;
-    overflow-y: auto;
+.ctrl-btn:hover {
+  background: #008bcc;
 }
-.playlist-item {
-    background: #101217;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.6rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    cursor: pointer;
-}
-.playlist-item:hover { border-color: var(--accent); }
 
-.hidden { display: none !important; }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+.placeholder {
+  color: #777;
+  text-align: center;
+  grid-column: 1 / -1;
 }
