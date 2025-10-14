@@ -7,29 +7,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-container">
-    <header>
+  <div class="player-container">
+    <header class="header">
       <h1>Koziky Music Player</h1>
-      <div class="link-input">
-        <input id="yt-link" type="text" placeholder="Paste YouTube link here..." />
-        <button id="add-btn" class="btn">Add Song</button>
+      <div class="add-section">
+        <input type="text" id="yt-link" placeholder="Paste YouTube link..." />
+        <button id="add-btn" class="btn">Add</button>
       </div>
     </header>
 
-    <main>
-      <div class="playlist" id="playlist">
-        <p class="placeholder">Your playlist is empty. Add some YouTube songs!</p>
-      </div>
+    <main class="playlist" id="playlist">
+      <p class="empty">No songs added yet. Paste a YouTube link above!</p>
     </main>
 
-    <footer>
+    <footer class="footer">
+      <div class="now-playing" id="now-playing">Not Playing</div>
       <div class="controls">
-        <button id="prev-btn" class="ctrl-btn">⏮</button>
-        <button id="play-btn" class="ctrl-btn">▶</button>
-        <button id="pause-btn" class="ctrl-btn">⏸</button>
-        <button id="next-btn" class="ctrl-btn">⏭</button>
+        <button id="prev-btn" class="control-btn"><span class="icon">⏮</span></button>
+        <button id="play-btn" class="control-btn play"><span class="icon">▶</span></button>
+        <button id="pause-btn" class="control-btn pause"><span class="icon">⏸</span></button>
+        <button id="next-btn" class="control-btn"><span class="icon">⏭</span></button>
       </div>
     </footer>
+
+    <div class="video-wrapper">
+      <iframe id="yt-player" src="" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+    </div>
   </div>
 
   <script src="script.js"></script>
