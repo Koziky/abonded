@@ -10,6 +10,34 @@ let player = null;
 let isPlaying = false;
 let volume = 50;
 let isMuted = false;
+let wakeLock = null;
+let currentSongForPlaylist = null;
+
+// YouTube API Key (Get your own from https://console.developers.google.com/)
+const YOUTUBE_API_KEY = 'AIzaSyDYw7fqVMXpQgJHxXQZJxZCOzZvBtR8cGU'; // Replace with your key
+
+// Wake Lock API - Keep screen awake while playing
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake Lock activated');
+            
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake Lock released');
+            });
+        } catch (err) {
+            console.error('Wake Lock error:', err);
+        }
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
 
 // Load data from localStorage on startup
 function loadData() {
@@ -21,6 +49,7 @@ function loadData() {
     
     renderSongs();
     renderPlaylists();
+    updateCurrentPlaylistDisplay();
 }
 
 // Save data to localStorage
@@ -46,6 +75,17 @@ function extractVideoId(url) {
 // YouTube API Ready
 function onYouTubeIframeAPIReady() {
     console.log('YouTube API Ready');
+}
+
+// Update current playlist display
+function updateCurrentPlaylistDisplay() {
+    const display = document.getElementById('current-playlist-name');
+    if (selectedPlaylistId === null) {
+        display.textContent = 'All Songs';
+    } else {
+        const playlist = playlists.find(p => p.id === selectedPlaylistId);
+        display.textContent = playlist ? playlist.name : 'All Songs';
+    }
 }
 
 // Add Song Dialog
@@ -87,6 +127,15 @@ async function addSong() {
         };
         
         songs.push(newSong);
+        
+        // If a playlist is selected, add to that playlist
+        if (selectedPlaylistId !== null) {
+            const playlist = playlists.find(p => p.id === selectedPlaylistId);
+            if (playlist && !playlist.songIds.includes(newSong.id)) {
+                playlist.songIds.push(newSong.id);
+            }
+        }
+        
         saveData();
         renderSongs();
         closeAddSongDialog();
@@ -94,6 +143,81 @@ async function addSong() {
     } catch (error) {
         alert('Failed to add song. Please check the URL and try again.');
     }
+}
+
+// Search YouTube Dialog
+function openSearchDialog() {
+    document.getElementById('search-dialog').classList.add('show');
+}
+
+function closeSearchDialog() {
+    document.getElementById('search-dialog').classList.remove('show');
+    document.getElementById('search-query').value = '';
+    document.getElementById('search-results').innerHTML = '';
+}
+
+async function searchYouTube() {
+    const query = document.getElementById('search-query').value.trim();
+    
+    if (!query) {
+        alert('Please enter a search term');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Searching...</p>';
+    
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}`
+        );
+        
+        if (!response.ok) throw new Error('Search failed');
+        
+        const data = await response.json();
+        
+        if (data.items.length === 0) {
+            resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No results found</p>';
+            return;
+        }
+        
+        resultsDiv.innerHTML = data.items.map(item => `
+            <div class="search-result-item" onclick="addSearchResult('${item.id.videoId}', '${item.snippet.title.replace(/'/g, "\\'")}')">
+                <img src="${item.snippet.thumbnails.medium.url}" alt="${item.snippet.title}">
+                <div class="search-result-info">
+                    <div class="search-result-title">${item.snippet.title}</div>
+                    <div class="search-result-channel">${item.snippet.channelTitle}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsDiv.innerHTML = '<p style="text-align: center; color: #dc2626;">Search failed. Please try again.</p>';
+    }
+}
+
+function addSearchResult(videoId, title) {
+    const newSong = {
+        id: Date.now().toString(),
+        title: title,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        url: `https://www.youtube.com/watch?v=${videoId}`
+    };
+    
+    songs.push(newSong);
+    
+    // If a playlist is selected, add to that playlist
+    if (selectedPlaylistId !== null) {
+        const playlist = playlists.find(p => p.id === selectedPlaylistId);
+        if (playlist && !playlist.songIds.includes(newSong.id)) {
+            playlist.songIds.push(newSong.id);
+        }
+    }
+    
+    saveData();
+    renderSongs();
+    closeSearchDialog();
+    showToast('Song added successfully!');
 }
 
 // Render Songs
@@ -118,9 +242,11 @@ function renderSongs() {
                 <div class="song-card-image">
                     <img src="${song.thumbnail}" alt="${song.title}">
                     <div class="song-card-overlay">
+                        <button class="play-btn" onclick="playNow('${song.id}')">▶️</button>
                         <button class="play-btn" onclick="addToQueue('${song.id}')">➕</button>
                     </div>
                     <button class="delete-btn" onclick="deleteSong('${song.id}')">🗑️</button>
+                    ${playlists.length > 0 ? `<button class="add-playlist-btn" onclick="openAddToPlaylistDialog('${song.id}')">📋</button>` : ''}
                 </div>
                 <div class="song-card-info">
                     <div class="song-card-title">${song.title}</div>
@@ -133,10 +259,73 @@ function renderSongs() {
 function deleteSong(id) {
     songs = songs.filter(s => s.id !== id);
     queue = queue.filter(s => s.id !== id);
+    
+    // Remove from all playlists
+    playlists.forEach(playlist => {
+        playlist.songIds = playlist.songIds.filter(songId => songId !== id);
+    });
+    
     saveData();
     renderSongs();
     renderQueue();
     showToast('Song deleted');
+}
+
+// Play song immediately
+function playNow(songId) {
+    const song = songs.find(s => s.id === songId);
+    if (song) {
+        queue = [song];
+        currentIndex = 0;
+        renderQueue();
+        updateQueueCount();
+        loadVideo();
+        showToast('Playing now');
+    }
+}
+
+// Add to Playlist Dialog
+function openAddToPlaylistDialog(songId) {
+    currentSongForPlaylist = songId;
+    const dialog = document.getElementById('add-to-playlist-dialog');
+    const list = document.getElementById('available-playlists');
+    
+    list.innerHTML = playlists.map(playlist => {
+        const hasSong = playlist.songIds.includes(songId);
+        return `
+            <div class="playlist-item">
+                <button class="playlist-btn ${hasSong ? 'active' : ''}" 
+                        onclick="toggleSongInPlaylist('${playlist.id}', '${songId}')">
+                    📋 ${playlist.name}
+                    ${hasSong ? '<span>✓</span>' : '<span>Add</span>'}
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    dialog.classList.add('show');
+}
+
+function closeAddToPlaylistDialog() {
+    document.getElementById('add-to-playlist-dialog').classList.remove('show');
+    currentSongForPlaylist = null;
+}
+
+function toggleSongInPlaylist(playlistId, songId) {
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) return;
+    
+    const index = playlist.songIds.indexOf(songId);
+    if (index > -1) {
+        playlist.songIds.splice(index, 1);
+        showToast('Removed from playlist');
+    } else {
+        playlist.songIds.push(songId);
+        showToast('Added to playlist');
+    }
+    
+    saveData();
+    openAddToPlaylistDialog(songId); // Refresh the dialog
 }
 
 // Playlist Dialog
@@ -198,6 +387,7 @@ function selectPlaylist(id) {
     selectedPlaylistId = id;
     renderSongs();
     renderPlaylists();
+    updateCurrentPlaylistDisplay();
 }
 
 function deletePlaylist(id) {
@@ -206,6 +396,7 @@ function deletePlaylist(id) {
     saveData();
     renderPlaylists();
     renderSongs();
+    updateCurrentPlaylistDisplay();
     showToast('Playlist deleted');
 }
 
@@ -251,6 +442,8 @@ function removeFromQueue(index) {
     if (index < currentIndex) currentIndex--;
     if (index === currentIndex && queue.length > 0) {
         loadVideo();
+    } else if (queue.length === 0) {
+        currentIndex = -1;
     }
     renderQueue();
     updateQueueCount();
@@ -351,6 +544,7 @@ function loadVideo() {
         });
     } else {
         player.loadVideoById(videoId);
+        player.playVideo();
         isPlaying = true;
         updatePlayButton();
     }
@@ -360,8 +554,10 @@ function loadVideo() {
 
 function onPlayerReady(event) {
     event.target.setVolume(volume);
+    event.target.playVideo();
     isPlaying = true;
     updatePlayButton();
+    requestWakeLock();
 }
 
 function onPlayerStateChange(event) {
@@ -370,9 +566,11 @@ function onPlayerStateChange(event) {
     } else if (event.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         updatePlayButton();
+        requestWakeLock();
     } else if (event.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         updatePlayButton();
+        releaseWakeLock();
     }
 }
 
@@ -395,6 +593,8 @@ function playNext() {
     if (currentIndex < queue.length - 1) {
         currentIndex++;
         loadVideo();
+    } else {
+        releaseWakeLock();
     }
 }
 
@@ -438,7 +638,6 @@ function updateVolumeIcon() {
 
 // Toast notifications
 function showToast(message) {
-    // Simple toast - you can enhance this
     const toast = document.createElement('div');
     toast.textContent = message;
     toast.style.cssText = `
@@ -485,15 +684,36 @@ document.getElementById('add-song-dialog').addEventListener('click', (e) => {
     if (e.target.id === 'add-song-dialog') closeAddSongDialog();
 });
 
+document.getElementById('search-dialog').addEventListener('click', (e) => {
+    if (e.target.id === 'search-dialog') closeSearchDialog();
+});
+
 document.getElementById('playlist-dialog').addEventListener('click', (e) => {
     if (e.target.id === 'playlist-dialog') closePlaylistDialog();
 });
 
-// Enter key to add song
+document.getElementById('add-to-playlist-dialog').addEventListener('click', (e) => {
+    if (e.target.id === 'add-to-playlist-dialog') closeAddToPlaylistDialog();
+});
+
+// Enter key handlers
 document.getElementById('youtube-url').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addSong();
 });
 
+document.getElementById('search-query').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchYouTube();
+});
+
 document.getElementById('new-playlist-name').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createPlaylist();
+});
+
+// Release wake lock when leaving page
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        releaseWakeLock();
+    } else if (isPlaying) {
+        requestWakeLock();
+    }
 });
