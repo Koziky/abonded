@@ -1,80 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kozy Music Player</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koziky Music Player</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
-        <h1>Kozy Music</h1>
-        <div class="header-actions">
-            <button id="addSongBtn" class="btn btn-primary">Add Song</button>
-            <button id="managePlaylistsBtn" class="btn btn-secondary">Playlists</button>
-        </div>
+  <div class="app-container">
+    <header>
+      <h1>Koziky Music Player</h1>
+      <div class="link-input">
+        <input id="yt-link" type="text" placeholder="Paste YouTube link here..." />
+        <button id="add-btn" class="btn">Add Song</button>
+      </div>
     </header>
 
-    <section class="main-content">
-        <div id="songsGrid" class="songs-grid"></div>
-        <div id="emptyState" class="empty-state">No songs yet. Add one using the button above!</div>
-    </section>
+    <main>
+      <div class="playlist" id="playlist">
+        <p class="placeholder">Your playlist is empty. Add some YouTube songs!</p>
+      </div>
+    </main>
 
-    <!-- Music Player -->
-    <div id="musicPlayer" class="music-player hidden">
-        <div class="player-info">
-            <img id="playerThumbnail" src="" alt="Thumbnail">
-            <div>
-                <div id="playerTitle" class="player-title">No Song Playing</div>
-            </div>
-        </div>
-        <div class="player-controls">
-            <button id="prevBtn" class="control-btn" title="Previous">
-                <svg viewBox="0 0 24 24"><path d="M6 4v16l8.5-8L6 4zm10 0v16h2V4h-2z"/></svg>
-            </button>
-            <button id="playPauseBtn" class="control-btn-large" title="Play/Pause">
-                <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <svg id="pauseIcon" class="hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            </button>
-            <button id="nextBtn" class="control-btn" title="Next">
-                <svg viewBox="0 0 24 24"><path d="M18 4v16l-8.5-8L18 4zm-10 0v16H6V4h2z"/></svg>
-            </button>
-        </div>
-        <div class="volume-controls">
-            <svg viewBox="0 0 24 24" class="volume-icon"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
-            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="1">
-        </div>
-    </div>
+    <footer>
+      <div class="controls">
+        <button id="prev-btn" class="ctrl-btn">⏮</button>
+        <button id="play-btn" class="ctrl-btn">▶</button>
+        <button id="pause-btn" class="ctrl-btn">⏸</button>
+        <button id="next-btn" class="ctrl-btn">⏭</button>
+      </div>
+    </footer>
+  </div>
 
-    <!-- Add Song Dialog -->
-    <div id="addSongDialog" class="dialog">
-        <div class="dialog-content">
-            <div class="dialog-header">
-                <h3>Add a YouTube Song</h3>
-                <button class="close-btn" id="closeAddSong">✕</button>
-            </div>
-            <div class="dialog-body">
-                <input id="youtubeLinkInput" type="text" class="input" placeholder="Paste YouTube link here">
-                <button id="fetchSongBtn" class="btn btn-primary">Add Song</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Manage Playlists Dialog -->
-    <div id="managePlaylistsDialog" class="dialog">
-        <div class="dialog-content">
-            <div class="dialog-header">
-                <h3>Manage Playlists</h3>
-                <button class="close-btn" id="closeManagePlaylists">✕</button>
-            </div>
-            <div class="dialog-body">
-                <div id="playlistsList" class="playlists-list"></div>
-                <input id="newPlaylistName" type="text" class="input" placeholder="New playlist name">
-                <button id="createPlaylistBtn" class="btn btn-primary">Create Playlist</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
