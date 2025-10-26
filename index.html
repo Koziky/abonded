@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotifake - Music Streaming</title>
+    <title>MusicHub - Your Music Player</title>
     <link rel="stylesheet" href="style.css">
-    <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
@@ -13,17 +12,19 @@
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="logo">
-                <h1>Spotifake</h1>
+                <h1>MusicHub</h1>
             </div>
             <ul class="nav-menu">
                 <li><a href="#" data-page="home">Home</a></li>
-                <li><a href="#" data-page="search">Search</a></li>
-                <li><a href="#" data-page="library">Your Library</a></li>
+                <li><a href="#" data-page="upload">Upload</a></li>
+                <li><a href="#" data-page="library">Library</a></li>
                 <li><a href="#" data-page="playlists">Playlists</a></li>
             </ul>
-            <div class="add-song">
-                <input type="text" id="yt-url" placeholder="Add song via YouTube URL">
+            <div class="add-section">
+                <input type="text" id="yt-url" placeholder="Add YouTube URL">
                 <button onclick="addYouTubeSong()">Add</button>
+                <input type="file" id="audio-upload" accept="audio/*">
+                <button onclick="uploadAudio()">Upload Audio</button>
             </div>
         </nav>
 
@@ -31,42 +32,43 @@
         <main class="main-content">
             <!-- Home Page -->
             <section id="home" class="page active">
-                <h2>Good evening</h2>
-                <div class="recommended">
-                    <h3>Recommended for you</h3>
-                    <div id="recommended-tracks"></div>
+                <h2>Welcome to MusicHub</h2>
+                <div class="featured">
+                    <h3>Featured Songs</h3>
+                    <div id="featured-songs" class="card-container"></div>
                 </div>
             </section>
 
-            <!-- Search Page -->
-            <section id="search" class="page">
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search for songs, artists...">
-                    <button onclick="searchSpotify()">Search</button>
+            <!-- Upload Page -->
+            <section id="upload" class="page">
+                <h2>Upload Your Music</h2>
+                <div class="upload-area">
+                    <input type="file" id="audio-upload-main" accept="audio/*">
+                    <button onclick="uploadAudio()">Upload</button>
+                    <input type="text" id="yt-url-main" placeholder="Or add YouTube URL">
+                    <button onclick="addYouTubeSong()">Add</button>
                 </div>
-                <div id="search-results"></div>
+                <div id="upload-preview" class="card-container"></div>
             </section>
 
             <!-- Library Page -->
             <section id="library" class="page">
                 <h2>Your Library</h2>
-                <div id="library-content">
-                    <p>Queues and playlists will appear here.</p>
-                </div>
+                <div id="library-content" class="card-container"></div>
             </section>
 
             <!-- Playlists Page -->
             <section id="playlists" class="page">
                 <h2>Playlists</h2>
                 <button onclick="createPlaylist()">Create Playlist</button>
-                <div id="playlist-list"></div>
+                <div id="playlist-list" class="card-container"></div>
             </section>
         </main>
 
         <!-- Player Bottom -->
         <footer class="player">
             <div class="track-info">
-                <img id="current-track-img" src="" alt="Current Track" width="50">
+                <img id="current-track-img" src="https://via.placeholder.com/50" alt="Current Track">
                 <div>
                     <div id="current-track-name">No track playing</div>
                     <div id="current-artist">Artist</div>
@@ -74,7 +76,7 @@
             </div>
             <div class="controls">
                 <button onclick="previousTrack()">⏮</button>
-                <button onclick="playPause()">⏸</button>
+                <button id="play-pause-btn">▶</button>
                 <button onclick="nextTrack()">⏭</button>
             </div>
             <div class="progress">
@@ -84,9 +86,7 @@
                 </div>
                 <span id="duration">0:00</span>
             </div>
-            <div class="queue-btn">
-                <button onclick="toggleQueue()">Queue</button>
-            </div>
+            <button class="queue-btn" onclick="toggleQueue()">Queue</button>
         </footer>
 
         <!-- Queue Modal -->
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <!-- Playlist Modal (for adding tracks) -->
+        <!-- Playlist Modal -->
         <div id="playlist-modal" class="modal">
             <div class="modal-content">
                 <h3>Add to Playlist</h3>
@@ -107,8 +107,11 @@
                 <button onclick="closePlaylistModal()">Cancel</button>
             </div>
         </div>
-    </div>
 
+        <!-- Hidden Audio Player -->
+        <div id="player-container" style="display:none;"></div>
+        <audio id="audio-player" style="display:none;"></audio>
+    </div>
     <script src="script.js"></script>
 </body>
-</html>s
+</html>
