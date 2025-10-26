@@ -3,36 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Spotify</title>
+    <title>Spotifake - Music Streaming</title>
     <link rel="stylesheet" href="style.css">
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <h1>Mini Spotify</h1>
-            <button id="newPlaylistBtn">+ New Playlist</button>
-        </header>
+    <div class="app">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h1>Spotifake</h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#" data-page="home">Home</a></li>
+                <li><a href="#" data-page="search">Search</a></li>
+                <li><a href="#" data-page="library">Your Library</a></li>
+                <li><a href="#" data-page="playlists">Playlists</a></li>
+            </ul>
+            <div class="add-song">
+                <input type="text" id="yt-url" placeholder="Add song via YouTube URL">
+                <button onclick="addYouTubeSong()">Add</button>
+            </div>
+        </nav>
 
-        <!-- Add Song -->
-        <section class="add-song">
-            <input type="text" id="ytUrl" placeholder="Paste YouTube link…">
-            <button id="addBtn">Add to Queue</button>
-        </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Home Page -->
+            <section id="home" class="page active">
+                <h2>Good evening</h2>
+                <div class="recommended">
+                    <h3>Recommended for you</h3>
+                    <div id="recommended-tracks"></div>
+                </div>
+            </section>
 
-        <!-- Queue -->
-        <section class="queue">
-            <h2>Queue</h2>
-            <ul id="queueList"></ul>
-        </section>
+            <!-- Search Page -->
+            <section id="search" class="page">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search for songs, artists...">
+                    <button onclick="searchSpotify()">Search</button>
+                </div>
+                <div id="search-results"></div>
+            </section>
 
-        <!-- Playlists -->
-        <section class="playlists">
-            <h2>Playlists</h2>
-            <div id="playlistContainer"></div>
-        </section>
+            <!-- Library Page -->
+            <section id="library" class="page">
+                <h2>Your Library</h2>
+                <div id="library-content">
+                    <p>Queues and playlists will appear here.</p>
+                </div>
+            </section>
+
+            <!-- Playlists Page -->
+            <section id="playlists" class="page">
+                <h2>Playlists</h2>
+                <button onclick="createPlaylist()">Create Playlist</button>
+                <div id="playlist-list"></div>
+            </section>
+        </main>
+
+        <!-- Player Bottom -->
+        <footer class="player">
+            <div class="track-info">
+                <img id="current-track-img" src="" alt="Current Track" width="50">
+                <div>
+                    <div id="current-track-name">No track playing</div>
+                    <div id="current-artist">Artist</div>
+                </div>
+            </div>
+            <div class="controls">
+                <button onclick="previousTrack()">⏮</button>
+                <button onclick="playPause()">⏸</button>
+                <button onclick="nextTrack()">⏭</button>
+            </div>
+            <div class="progress">
+                <span id="progress-time">0:00</span>
+                <div class="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <span id="duration">0:00</span>
+            </div>
+            <div class="queue-btn">
+                <button onclick="toggleQueue()">Queue</button>
+            </div>
+        </footer>
+
+        <!-- Queue Modal -->
+        <div id="queue-modal" class="modal">
+            <div class="modal-content">
+                <h3>Queue</h3>
+                <ul id="queue-list"></ul>
+                <button onclick="toggleQueue()">Close</button>
+            </div>
+        </div>
+
+        <!-- Playlist Modal (for adding tracks) -->
+        <div id="playlist-modal" class="modal">
+            <div class="modal-content">
+                <h3>Add to Playlist</h3>
+                <select id="playlist-select"></select>
+                <button onclick="addToPlaylist()">Add</button>
+                <button onclick="closePlaylistModal()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
 </body>
-</html>
+</html>s
