@@ -1,119 +1,38 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>KozyMusic — Spotify-style Web Player</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Spotify</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo">K</div>
-        <div class="brand-name">KozyMusic</div>
-      </div>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Mini Spotify</h1>
+            <button id="newPlaylistBtn">+ New Playlist</button>
+        </header>
 
-      <nav class="nav">
-        <button class="nav-btn active">Home</button>
-        <button class="nav-btn">Search</button>
-        <button class="nav-btn">Your Library</button>
-      </nav>
+        <!-- Add Song -->
+        <section class="add-song">
+            <input type="text" id="ytUrl" placeholder="Paste YouTube link…">
+            <button id="addBtn">Add to Queue</button>
+        </section>
 
-      <div class="library">
-        <div class="library-head">Playlists</div>
-        <ul id="playlistsList" class="playlists-list"></ul>
-      </div>
+        <!-- Queue -->
+        <section class="queue">
+            <h2>Queue</h2>
+            <ul id="queueList"></ul>
+        </section>
 
-      <button id="openAddModal" class="create-playlist">+ Add Song</button>
-
-      <div class="sidebar-bottom">
-        <div class="legal">KozyMusic • Demo</div>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main">
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1 class="page-title">Good Afternoon</h1>
-        </div>
-
-        <div class="topbar-right">
-          <input id="searchLocal" class="search-input" placeholder="Search in playlist..." />
-        </div>
-      </header>
-
-      <section class="content">
-        <div class="grid-head">
-          <h2>Recommended</h2>
-        </div>
-
-        <div id="recommendedRow" class="row"></div>
-
-        <div class="playlist-panel">
-          <div class="playlist-header">
-            <h2>Your Queue</h2>
-            <div id="queueCount" class="queue-count">0</div>
-          </div>
-          <div id="playlist" class="playlist-list"></div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- BOTTOM PLAYER -->
-  <footer class="player-bar">
-    <div class="player-left">
-      <img id="nowThumb" class="now-thumb" src="" alt="">
-      <div class="now-meta">
-        <div id="nowTitle" class="now-title">Nothing playing</div>
-        <div id="nowArtist" class="now-artist">—</div>
-      </div>
+        <!-- Playlists -->
+        <section class="playlists">
+            <h2>Playlists</h2>
+            <div id="playlistContainer"></div>
+        </section>
     </div>
 
-    <div class="player-center">
-      <div class="controls">
-        <button id="prevBtn" class="control">⏮</button>
-        <button id="playBtn" class="control big">▶</button>
-        <button id="nextBtn" class="control">⏭</button>
-      </div>
-
-      <div class="progress-wrap">
-        <input id="seek" type="range" min="0" max="100" value="0" class="seek">
-        <div class="time-row"><span id="curtime">0:00</span><span id="durtime">0:00</span></div>
-      </div>
-    </div>
-
-    <div class="player-right">
-      <input id="volume" type="range" min="0" max="100" value="70" class="volume">
-    </div>
-  </footer>
-
-  <!-- Add Song Modal -->
-  <div id="addModal" class="modal">
-    <div class="modal-panel">
-      <div class="modal-header">
-        <h3>Add a song</h3>
-        <button id="closeAddModal" class="modal-close">✕</button>
-      </div>
-      <div class="modal-body">
-        <label>Paste a YouTube link (watch?v or youtu.be) <small>or</small> an MP3 file URL</label>
-        <input id="songInput" placeholder="https://www.youtube.com/watch?v=..." />
-        <div class="modal-actions">
-          <button id="addSongBtn" class="btn primary">Add Song</button>
-        </div>
-        <p class="note">If you add YouTube links the player will use YouTube embed playback. MP3 URLs play directly.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hidden container for YouTube player -->
-  <div id="yt-player-container" style="display:none"></div>
-
-  <!-- YouTube IFrame API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
