@@ -1,5 +1,9 @@
-/* GlassBeats — script.js
-   Uses YouTube IFrame API for playback + playlist/queue management
+/* GlassBeats — script.js (updated)
+   - audio-only (video iframe hidden visually)
+   - SVG controls (no emoji)
+   - Playlists manager: create/select/delete playlists
+   - shuffle / repeat / queue / localStorage persistence
+   - keyboard shortcuts: space = play/pause, ←/→ prev/next
 */
 
 (() => {
@@ -14,23 +18,24 @@
   }
   function extractVideoId(input){
     if (!input) return null;
-    // Accept full URLs, share links, or raw ids
     const urlMatch = input.match(/(?:v=|\/v\/|youtu\.be\/|\/embed\/)([A-Za-z0-9_-]{6,})/);
     if (urlMatch) return urlMatch[1];
-    // fallback: maybe it's just an ID
     const idMatch = input.match(/^[A-Za-z0-9_-]{6,20}$/);
     return idMatch ? idMatch[0] : null;
   }
 
   // --- State ---
-  let playlist = [];   // {id,title}
-  let queue = [];      // array of ids
-  let currentIndex = -1; // index in playlist
+  let playlists = {};      // { name: [ {id,title} ] }
+  let activePlaylist = "Global";
+  let playlist = [];       // shortcut to playlists[activePlaylist]
+  let queue = [];
+  let currentIndex = -1;   // index in playlist
   let ytPlayer = null;
   let isPlaying = false;
   let repeatMode = false;
   let shuffleMode = false;
-  const STORAGE_KEY = "glassbeats_playlist_v1";
+  const STORAGE_PLAYLISTS = "glassbeats_playlists_v1";
+  const STORAGE_QUEUE = "glassbeats_queue_v1";
 
   // DOM refs
   const playlistEl = $("#playlistItems");
@@ -47,19 +52,29 @@
   const nowTime = $("#nowTime");
   const durationEl = $("#duration");
   const clearQueueBtn = $("#clearQueue");
-  const saveList = $("#saveList");
-  const loadList = $("#loadList");
+  const createPlaylistBtn = $("#createPlaylistBtn");
+  const deletePlaylistBtn = $("#deletePlaylistBtn");
+  const playlistsList = $("#playlistsList");
+  const activePlaylistNameEl = $("#activePlaylistName");
   const savedListsContainer = $("#savedLists");
   const shuffleBtn = $("#shuffle");
   const repeatBtn = $("#repeat");
+  const playIcon = $("#playIcon");
+  const pauseIcon = $("#pauseIcon");
 
-  // --- YouTube API setup (global function required by API) ---
+  // --- YouTube API setup ---
   window.onYouTubeIframeAPIReady = function(){
-    // Create invisible player first; we'll swap container content when playing
     ytPlayer = new YT.Player('playerPlaceholder', {
       height: '200',
       width: '360',
-      playerVars: {controls:0, disablekb:1, rel:0, modestbranding:1, showinfo:0},
+      playerVars: {
+        controls: 0,
+        disablekb: 1,
+        rel: 0,
+        modestbranding: 1,
+        showinfo: 0,
+        iv_load_policy: 3
+      },
       events: {
         onReady: onPlayerReady,
         onStateChange: onPlayerStateChange,
@@ -68,26 +83,76 @@
   };
 
   function onPlayerReady(){
-    // set volume from control
     ytPlayer.setVolume(volEl.value);
     startProgressUpdater();
   }
 
   function onPlayerStateChange(e){
-    // YT states: -1 unstarted, 0 ended, 1 playing, 2 paused
-    if (e.data === 0) { // ended
-      if (repeatMode) {
-        playCurrent();
-      } else {
-        playNext();
-      }
-    } else if (e.data === 1) {
+    // -1 unstarted, 0 ended, 1 playing, 2 paused
+    if (e.data === 0) {
+      if (repeatMode) playCurrent();
+      else playNext();
+    } else if (e.data === 1) { // playing
       isPlaying = true;
-      playBtn.textContent = "▮▮";
-    } else if (e.data === 2) {
+      playIcon.style.display = "none";
+      pauseIcon.style.display = "";
+    } else if (e.data === 2) { // paused
       isPlaying = false;
-      playBtn.textContent = "▶";
+      playIcon.style.display = "";
+      pauseIcon.style.display = "none";
     }
+  }
+
+  // --- Playlists persistence & management ---
+  function loadPlaylistsFromStorage(){
+    try {
+      const raw = localStorage.getItem(STORAGE_PLAYLISTS);
+      playlists = raw ? JSON.parse(raw) : {};
+    } catch(e){ playlists = {}; }
+    // ensure Global exists
+    if (!playlists.Global) playlists.Global = [];
+    playlist = playlists[activePlaylist] || [];
+  }
+  function savePlaylistsToStorage(){
+    try { localStorage.setItem(STORAGE_PLAYLISTS, JSON.stringify(playlists)); }
+    catch(e){}
+  }
+  function createPlaylist(){
+    const name = prompt("New playlist name:", `Playlist ${Object.keys(playlists).length + 1}`);
+    if (!name) return;
+    if (playlists[name]) { alert("A playlist with that name already exists."); return; }
+    playlists[name] = [];
+    savePlaylistsToStorage();
+    renderPlaylistsUI();
+    selectPlaylist(name);
+  }
+  function deleteActivePlaylist(){
+    if (activePlaylist === "Global") { alert("Cannot delete Global playlist."); return; }
+    if (!confirm(`Delete playlist "${activePlaylist}"? This cannot be undone.`)) return;
+    delete playlists[activePlaylist];
+    activePlaylist = "Global";
+    playlist = playlists.Global;
+    savePlaylistsToStorage();
+    renderPlaylistsUI();
+    renderPlaylist();
+  }
+  function selectPlaylist(name){
+    if (!playlists[name]) return;
+    activePlaylist = name;
+    playlist = playlists[activePlaylist];
+    activePlaylistNameEl.textContent = ` (${activePlaylist})`;
+    renderPlaylistsUI();
+    renderPlaylist();
+  }
+  function renderPlaylistsUI(){
+    playlistsList.innerHTML = "";
+    Object.keys(playlists).forEach(name => {
+      const li = document.createElement("li");
+      li.textContent = `${name} (${playlists[name].length})`;
+      li.classList.toggle("active", name === activePlaylist);
+      li.addEventListener("click", () => selectPlaylist(name));
+      playlistsList.appendChild(li);
+    });
   }
 
   // --- UI Render ---
@@ -99,44 +164,44 @@
       li.dataset.index = idx;
       li.innerHTML = `<div class="song-title" title="${item.title || item.id}">${item.title || item.id}</div>
                       <div class="song-actions">
-                        <button class="btn-icon play-now" title="Play">▶</button>
-                        <button class="btn-icon add-queue" title="Add to Queue">＋</button>
-                        <button class="btn-icon remove" title="Remove">✕</button>
+                        <button class="btn-icon play-now" title="Play" aria-label="Play"> 
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 3v18l15-9L5 3z" fill="currentColor"/></svg>
+                        </button>
+                        <button class="btn-icon add-queue" title="Add to Queue" aria-label="Add to Queue">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button class="btn-icon remove" title="Remove" aria-label="Remove">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
                       </div>`;
-      // double click to play
       li.addEventListener("dblclick", () => {
         currentIndex = idx;
         loadAndPlayByIndex(idx);
       });
-
       li.querySelector(".play-now").addEventListener("click", () => {
         currentIndex = idx;
         loadAndPlayByIndex(idx);
       });
       li.querySelector(".add-queue").addEventListener("click", () => {
         queue.push(item.id);
-        saveStateToLocal();
+        saveQueue();
         renderQueue();
       });
       li.querySelector(".remove").addEventListener("click", () => {
-        if (idx === currentIndex) {
-          stop();
-        }
+        if (idx === currentIndex) stop();
         playlist.splice(idx,1);
+        savePlaylistsToStorage();
         if (idx < currentIndex) currentIndex--;
         renderPlaylist();
       });
 
-      // drag events
+      // drag & drop
       li.addEventListener("dragstart", (ev) => {
         ev.dataTransfer.setData("text/plain", idx);
         li.classList.add("dragging");
       });
       li.addEventListener("dragend", () => li.classList.remove("dragging"));
-      li.addEventListener("dragover", (ev) => {
-        ev.preventDefault();
-        li.style.transform = "translateY(6px)";
-      });
+      li.addEventListener("dragover", (ev) => { ev.preventDefault(); li.style.transform = "translateY(6px)"; });
       li.addEventListener("dragleave", () => li.style.transform = "");
       li.addEventListener("drop", (ev) => {
         ev.preventDefault();
@@ -145,9 +210,11 @@
         if (from === to) return;
         const [moved] = playlist.splice(from, 1);
         playlist.splice(to, 0, moved);
+        // adjust currentIndex appropriately
         if (from === currentIndex) currentIndex = to;
         else if (from < currentIndex && to >= currentIndex) currentIndex--;
         else if (from > currentIndex && to <= currentIndex) currentIndex++;
+        savePlaylistsToStorage();
         renderPlaylist();
       });
 
@@ -161,24 +228,32 @@
       const li = document.createElement("li");
       li.innerHTML = `<div class="song-title">${id}</div>
                       <div class="song-actions">
-                        <button class="btn-icon q-play">▶</button>
-                        <button class="btn-icon q-remove">✕</button>
+                        <button class="btn-icon q-play" title="Play" aria-label="Play">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 3v18l15-9L5 3z" fill="currentColor"/></svg>
+                        </button>
+                        <button class="btn-icon q-remove" title="Remove" aria-label="Remove">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
                       </div>`;
       li.querySelector(".q-play").addEventListener("click", () => {
-        // if id exists in playlist, play it; else add and play last
         const idx = playlist.findIndex(s => s.id === id);
         if (idx >= 0) {
           currentIndex = idx;
           loadAndPlayByIndex(idx);
         } else {
-          const newIdx = playlist.push({id, title: id}) - 1;
-          currentIndex = newIdx;
+          playlist.push({id, title: id});
+          savePlaylistsToStorage();
+          currentIndex = playlist.length - 1;
           renderPlaylist();
-          loadAndPlayByIndex(newIdx);
+          loadAndPlayByIndex(currentIndex);
         }
+        queue.splice(i,1);
+        saveQueue();
+        renderQueue();
       });
       li.querySelector(".q-remove").addEventListener("click", () => {
         queue.splice(i,1);
+        saveQueue();
         renderQueue();
       });
       queueEl.appendChild(li);
@@ -198,73 +273,72 @@
     if (!playlist[idx]) return;
     const id = playlist[idx].id;
     if (!ytPlayer) return;
-    ytPlayer.loadVideoById(id);
+    // load video by id and play
+    try {
+      ytPlayer.loadVideoById(id);
+    } catch (e) {
+      // if player not ready, queue a small timeout
+      setTimeout(() => ytPlayer && ytPlayer.loadVideoById(id), 300);
+    }
     currentIndex = idx;
     updateNowPlayingUI();
-    // attempt to fetch title via oEmbed (no CORS issues because it's JSONP? We'll use no external fetch — fallback to id)
-    // Try fetch basic title via yt oembed (CORS-friendly)
+    // fetch title via oembed
     fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(j => {
         playlist[idx].title = j.title;
+        savePlaylistsToStorage();
         updateNowPlayingUI();
         renderPlaylist();
-      }).catch(()=>{ /* ignore */});
+      }).catch(()=>{});
     isPlaying = true;
-    playBtn.textContent = "▮▮";
-    saveStateToLocal();
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "";
+    savePlaylistsToStorage();
   }
 
   function playCurrent(){
     if (currentIndex < 0 && playlist.length > 0) currentIndex = 0;
     if (currentIndex >= 0) loadAndPlayByIndex(currentIndex);
   }
-
-  function pause(){
-    if (ytPlayer) ytPlayer.pauseVideo();
-  }
-  function resume(){
-    if (ytPlayer) ytPlayer.playVideo();
-  }
-  function stop(){
-    if (ytPlayer) ytPlayer.stopVideo();
-    isPlaying = false;
-    playBtn.textContent = "▶";
-  }
+  function pause(){ if (ytPlayer) ytPlayer.pauseVideo(); }
+  function resume(){ if (ytPlayer) ytPlayer.playVideo(); }
+  function stop(){ if (ytPlayer) ytPlayer.stopVideo(); isPlaying=false; playIcon.style.display=""; pauseIcon.style.display="none"; }
 
   function playNext(){
-    if (shuffleMode && playlist.length > 1) {
-      currentIndex = Math.floor(Math.random() * playlist.length);
-      loadAndPlayByIndex(currentIndex);
-      return;
-    }
     // if queue has items, play them first
     if (queue.length > 0){
       const id = queue.shift();
-      // if already in playlist, play existing; else add to end
+      saveQueue();
       const idx = playlist.findIndex(s => s.id === id);
       if (idx >= 0) {
         currentIndex = idx;
         loadAndPlayByIndex(idx);
       } else {
-        const newIdx = playlist.push({id, title: id}) - 1;
-        currentIndex = newIdx;
+        playlist.push({id, title: id});
+        savePlaylistsToStorage();
+        currentIndex = playlist.length - 1;
         renderPlaylist();
-        loadAndPlayByIndex(newIdx);
+        loadAndPlayByIndex(currentIndex);
       }
       renderQueue();
       return;
     }
 
-    if (currentIndex+1 < playlist.length) {
+    if (shuffleMode && playlist.length > 1) {
+      currentIndex = Math.floor(Math.random() * playlist.length);
+      loadAndPlayByIndex(currentIndex);
+      return;
+    }
+
+    if (currentIndex + 1 < playlist.length) {
       currentIndex++;
       loadAndPlayByIndex(currentIndex);
     } else {
-      if (repeatMode) {
+      if (repeatMode && playlist.length > 0) {
         currentIndex = 0;
         loadAndPlayByIndex(currentIndex);
       } else {
-        // end
         stop();
       }
     }
@@ -279,12 +353,11 @@
       currentIndex--;
       loadAndPlayByIndex(currentIndex);
     } else {
-      // go to last if repeat
-      if (repeatMode && playlist.length>0) {
-        currentIndex = playlist.length-1;
+      if (repeatMode && playlist.length > 0) {
+        currentIndex = playlist.length - 1;
         loadAndPlayByIndex(currentIndex);
       } else {
-        ytPlayer.seekTo(0);
+        if (ytPlayer) ytPlayer.seekTo(0);
       }
     }
   }
@@ -294,7 +367,7 @@
   function startProgressUpdater(){
     clearInterval(progressTimer);
     progressTimer = setInterval(() => {
-      if (!ytPlayer || ytPlayer.getDuration === undefined) return;
+      if (!ytPlayer || typeof ytPlayer.getDuration !== "function") return;
       const dur = ytPlayer.getDuration();
       const cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
       if (isFinite(dur) && dur > 0) {
@@ -306,61 +379,37 @@
     }, 350);
   }
 
-  // --- Persistence ---
-  function saveStateToLocal(){
-    try {
-      const data = {playlist, queue};
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e){}
-  }
-  function loadStateFromLocal(){
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const obj = JSON.parse(raw);
-      if (obj.playlist) playlist = obj.playlist;
-      if (obj.queue) queue = obj.queue;
-    } catch(e){}
-  }
+  // --- Queue persistence ---
+  function saveQueue(){ try { localStorage.setItem(STORAGE_QUEUE, JSON.stringify(queue)); } catch(e){} }
+  function loadQueue(){ try { const raw = localStorage.getItem(STORAGE_QUEUE); queue = raw ? JSON.parse(raw) : []; } catch(e){ queue = []; } }
 
-  // Saved playlists (allow multiple)
-  function saveNamedList(){
-    const name = prompt("Save playlist as (name):", "My Playlist");
-    if (!name) return;
-    const all = JSON.parse(localStorage.getItem("glassbeats_saved_v1") || "{}");
-    all[name] = { playlist, savedAt: Date.now() };
-    localStorage.setItem("glassbeats_saved_v1", JSON.stringify(all));
-    renderSavedLists();
-  }
-  function loadNamedList(name){
-    const all = JSON.parse(localStorage.getItem("glassbeats_saved_v1") || "{}");
-    if (!all[name]) return;
-    playlist = all[name].playlist || [];
-    queue = [];
-    currentIndex = -1;
-    renderPlaylist(); renderQueue(); saveStateToLocal();
-  }
+  // --- Saved playlists area (visual list of saved playlist objects) ---
   function renderSavedLists(){
     savedListsContainer.innerHTML = "";
-    const all = JSON.parse(localStorage.getItem("glassbeats_saved_v1") || "{}");
-    for (const name in all){
-      const el = document.createElement("div");
-      el.className = "glass-panel";
-      el.style.display="flex"; el.style.justifyContent="space-between"; el.style.alignItems="center";
-      el.innerHTML = `<div><strong>${name}</strong><div class="small muted">items: ${ (all[name].playlist||[]).length }</div></div>
+    const names = Object.keys(playlists);
+    names.forEach(name => {
+      const item = document.createElement("div");
+      item.className = "glass-panel";
+      item.style.display = "flex";
+      item.style.justifyContent = "space-between";
+      item.style.alignItems = "center";
+      item.innerHTML = `<div><strong>${name}</strong><div class="small muted">items: ${playlists[name].length}</div></div>
         <div style="display:flex;gap:.5rem">
           <button class="btn muted load-saved">Load</button>
           <button class="btn muted delete-saved">Delete</button>
         </div>`;
-      el.querySelector(".load-saved").addEventListener("click", ()=> loadNamedList(name));
-      el.querySelector(".delete-saved").addEventListener("click", ()=>{
-        if (!confirm(`Delete saved playlist "${name}"?`)) return;
-        delete all[name];
-        localStorage.setItem("glassbeats_saved_v1", JSON.stringify(all));
+      item.querySelector(".load-saved").addEventListener("click", () => selectPlaylist(name));
+      item.querySelector(".delete-saved").addEventListener("click", () => {
+        if (name === "Global") { alert("Cannot delete Global playlist"); return; }
+        if (!confirm(`Delete playlist "${name}"?`)) return;
+        delete playlists[name];
+        savePlaylistsToStorage();
+        renderPlaylistsUI();
         renderSavedLists();
+        if (activePlaylist === name) selectPlaylist("Global");
       });
-      savedListsContainer.appendChild(el);
-    }
+      savedListsContainer.appendChild(item);
+    });
   }
 
   // --- Wire up events ---
@@ -368,8 +417,8 @@
     const id = extractVideoId(videoUrl.value.trim());
     if (!id) { alert("Couldn't parse a YouTube id/URL."); return; }
     playlist.push({id, title: id});
+    savePlaylistsToStorage();
     renderPlaylist();
-    saveStateToLocal();
     videoUrl.value = "";
   });
 
@@ -377,10 +426,13 @@
     const id = extractVideoId(videoUrl.value.trim());
     if (!id) { alert("Couldn't parse a YouTube id/URL."); return; }
     queue.push(id);
+    saveQueue();
     renderQueue();
-    saveStateToLocal();
     videoUrl.value = "";
   });
+
+  createPlaylistBtn.addEventListener("click", createPlaylist);
+  deletePlaylistBtn.addEventListener("click", deleteActivePlaylist);
 
   playBtn.addEventListener("click", () => {
     if (!ytPlayer) return;
@@ -407,14 +459,7 @@
     }
   });
 
-  clearQueueBtn.addEventListener("click", () => {
-    queue = []; renderQueue(); saveStateToLocal();
-  });
-
-  saveList.addEventListener("click", saveNamedList);
-  loadList.addEventListener("click", () => {
-    loadStateFromLocal(); renderPlaylist(); renderQueue();
-  });
+  clearQueueBtn.addEventListener("click", () => { queue = []; saveQueue(); renderQueue(); });
 
   shuffleBtn.addEventListener("click", () => {
     shuffleMode = !shuffleMode;
@@ -425,22 +470,29 @@
     repeatBtn.style.opacity = repeatMode ? 1 : 0.6;
   });
 
-  // Click on playlist item to play implemented earlier
-  // Periodic UI updates
+  // Keyboard shortcuts
+  window.addEventListener("keydown", (e) => {
+    const tag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea") return; // avoid interfering with typing
+    if (e.code === "Space") { e.preventDefault(); playBtn.click(); }
+    if (e.code === "ArrowRight") nextBtn.click();
+    if (e.code === "ArrowLeft") prevBtn.click();
+  });
+
+  // --- Initialization ---
   function init(){
-    loadStateFromLocal();
-    renderPlaylist();
+    loadPlaylistsFromStorage();
+    loadQueue();
+    renderPlaylistsUI();
+    selectPlaylist(activePlaylist); // will render playlist
     renderQueue();
     renderSavedLists();
     updateNowPlayingUI();
-    // start progress even if player not ready
     startProgressUpdater();
   }
 
-  // Expose some helpers to global for debugging
-  window.GB = { playlist, queue };
+  // expose for debugging
+  window.GB = { playlists, queue };
 
-  // Initialize
   init();
-
 })();
