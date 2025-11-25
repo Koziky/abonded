@@ -1,28 +1,96 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GlassBeats - Music Player</title>
-
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GlassBeats — YouTube Music Player</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div id="app" class="glass animate-float glass-highlight">
-    <h1>GlassBeats</h1>
-    <p>A modern glassmorphic music player UI</p>
+  <div id="wrap">
+    <!-- Sidebar -->
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="logo glass-glow">GB</div>
+        <div>
+          <h1>GlassBeats</h1>
+          <small>YouTube Music Player</small>
+        </div>
+      </div>
 
-    <!-- Placeholder player UI -->
-    <div class="glass" style="padding: 20px; margin-top: 20px;">
-      <p>Player coming soon...</p>
-    </div>
+      <div class="controls">
+        <input id="videoUrl" placeholder="Paste YouTube URL or ID" />
+        <div class="row">
+          <button id="addBtn" class="btn">Add to Playlist</button>
+          <button id="queueBtn" class="btn alt">Add to Queue</button>
+        </div>
+
+        <div class="row">
+          <button id="saveList" class="btn muted">Save List</button>
+          <button id="loadList" class="btn muted">Load List</button>
+        </div>
+      </div>
+
+      <div class="playlist glass-panel" id="playlist" aria-label="playlist">
+        <h3>Playlist</h3>
+        <ul id="playlistItems"></ul>
+      </div>
+
+      <div class="small muted">Tip: drag items to reorder. Double-click to play.</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <section class="player glass">
+        <div class="player-left">
+          <div id="playerPlaceholder" class="player-placeholder glass-panel">
+            <div class="player-cover">⟳</div>
+          </div>
+
+          <div class="player-meta">
+            <h2 id="nowTitle">Nothing playing</h2>
+            <div class="meta-row">
+              <span id="nowTime">0:00</span>
+              <input id="progress" type="range" min="0" max="100" value="0" />
+              <span id="duration">0:00</span>
+            </div>
+            <div class="controls-row">
+              <button id="prev" title="Previous">⟸</button>
+              <button id="play" title="Play/Pause">▶</button>
+              <button id="next" title="Next">⟹</button>
+              <div class="vol">
+                <input id="volume" type="range" min="0" max="100" value="80" />
+              </div>
+              <button id="shuffle" class="btn-icon" title="Shuffle">🔀</button>
+              <button id="repeat" class="btn-icon" title="Repeat">🔁</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-right glass-panel queue" id="queuePanel">
+          <h3>Queue</h3>
+          <ul id="queueItems"></ul>
+          <div class="queue-actions">
+            <button id="clearQueue" class="btn muted">Clear Queue</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="extra glass-panel">
+        <h3>Shortcuts & Saved Playlists</h3>
+        <div class="small muted">Saved playlists store in your browser's localStorage.</div>
+        <div class="saved" id="savedLists"></div>
+      </section>
+    </main>
   </div>
 
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>
 </body>
 </html>
