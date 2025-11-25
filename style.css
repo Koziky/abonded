@@ -1,10 +1,11 @@
-/* GlassBeats — style.css
-   Glassmorphic theme, responsive layout
-   All colors use HSL-ish variables where meaningful
+/* GlassBeats — style.css (updated)
+   - video visually hidden for audio-only playback
+   - SVG icons used for buttons (no emojis)
+   - Playlists UI styling
 */
 
 :root{
-  --bg-1: 220 8% 6%;      /* very dark */
+  --bg-1: 220 8% 6%;
   --fg: 0 0% 98%;
   --accent-h: 45;
   --primary: 45 100% 70%;
@@ -52,7 +53,7 @@ body{
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* special panels */
+/* panels */
 .glass-panel{
   padding: 0.75rem;
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
@@ -77,8 +78,8 @@ body{
 }
 .logo.glass-glow{
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-h) 95% 65%));
-  color: hsl(var(--primary-foreground, 0 0% 8%));
-  box-shadow: 0 6px 30px hsl(var(--primary) / 0.18);
+  color: #0b0b0b;
+  box-shadow: 0 6px 30px hsla(var(--primary) / 0.18);
 }
 .brand h1{margin:0;font-size:1.05rem}
 .brand small{font-size:.72rem;color: hsl(var(--muted) / 1); display:block}
@@ -99,10 +100,14 @@ body{
 }
 .btn.alt{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--fg)}
 .btn.muted{background:transparent;border:1px dashed rgba(255,255,255,0.04);color: hsl(var(--muted));padding:.4rem}
-.btn-icon{background:transparent;border:0;padding:.25rem;font-size:1.05rem;color:inherit;cursor:pointer}
+.btn-icon{background:transparent;border:0;padding:.45rem;border-radius:8px;font-size:1rem;color:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.btn-icon:hover{background:rgba(255,255,255,0.02)}
 
-/* Playlist list */
-.playlist{flex:1;overflow:auto}
+/* Playlist list & Playlists */
+.playlists h3{margin:.25rem 0 .5rem 0;font-size:1rem}
+.playlists ul, .playlist ul {list-style:none;padding:0;margin:0;display:block}
+.playlists li{display:flex;align-items:center;justify-content:space-between;padding:.45rem;border-radius:8px;margin-bottom:.35rem;cursor:pointer;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04));border:1px solid rgba(255,255,255,0.02)}
+.playlists li.active{outline:2px solid rgba(255,255,255,0.04)}
 .playlist h3{margin:.25rem 0 .5rem 0;font-size:1rem}
 .playlist ul, .queue ul {list-style:none;padding:0;margin:0;display:block}
 .playlist li, .queue li{
@@ -123,7 +128,16 @@ body{
 .player-placeholder{
   width:360px;height:200px;display:flex;align-items:center;justify-content:center;border-radius:10px;position:relative;overflow:hidden;
 }
-.player-cover{font-size:3rem;opacity:.25}
+/* Hide the video iframe visually while keeping it in the DOM so audio plays via YouTube API */
+.player-placeholder iframe {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  left: -9999px !important;
+  top: auto !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 /* meta and controls */
 .player-meta{flex:1;display:flex;flex-direction:column;gap:.6rem;align-items:stretch}
