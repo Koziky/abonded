@@ -1,9 +1,10 @@
 // App State
 const state = {
     queue: [
-        { id: '1', title: 'Sample Song 1', artist: 'Artist Name', album: 'Album Name', duration: 195 },
-        { id: '2', title: 'Sample Song 2', artist: 'Another Artist', album: 'Another Album', duration: 223 }
+        { id: '1', title: 'Sample Song 1', artist: 'Artist Name', album: 'Album Name', duration: 195, thumbnail: '' },
+        { id: '2', title: 'Sample Song 2', artist: 'Another Artist', album: 'Another Album', duration: 223, thumbnail: '' }
     ],
+    pendingSong: null,
     playlists: [
         { id: '1', name: 'My Favorites', songCount: 2, songs: ['1', '2'] },
         { id: '2', name: 'Chill Vibes', songCount: 0, songs: [] }
@@ -31,7 +32,6 @@ const elements = {
     modal: document.getElementById('addSongModal'),
     modalClose: document.querySelector('.modal-close'),
     cancelBtn: document.querySelector('.cancel-btn'),
-    addBtn: document.querySelector('.add-btn'),
     playBtn: document.querySelector('.play-btn'),
     prevBtn: document.querySelector('.prev-btn'),
     nextBtn: document.querySelector('.next-btn'),
@@ -73,8 +73,9 @@ function renderQueue() {
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
+            ${song.thumbnail ? `<img src="${song.thumbnail}" class="queue-item-thumbnail" alt="${song.title}">` : '<div class="queue-item-thumbnail">🎵</div>'}
             <div class="queue-item-info">
-                <div class="queue-item-title">${song.title}${song.id === currentSong?.id ? ' <span style="color: var(--spotify-green)">Playing</span>' : ''}</div>
+                <div class="queue-item-title">${song.title}${song.id === currentSong?.id ? ' <span style="color: var(--accent-purple)">Playing</span>' : ''}</div>
                 <div class="queue-item-artist">${song.artist}</div>
             </div>
             <span class="queue-item-duration">${formatTime(song.duration)}</span>
@@ -147,7 +148,11 @@ function renderPlayer() {
     const song = getCurrentSong();
     
     if (song) {
-        elements.songCover.textContent = '🎵';
+        if (song.thumbnail) {
+            elements.songCover.innerHTML = `<img src="${song.thumbnail}" alt="${song.title}">`;
+        } else {
+            elements.songCover.textContent = '🎵';
+        }
         elements.songTitle.textContent = song.title;
         elements.songArtist.textContent = song.artist;
         elements.timeTotal.textContent = formatTime(song.duration);
@@ -346,7 +351,76 @@ function addSong(songData) {
         id: Date.now().toString()
     };
     state.queue.push(newSong);
+    state.pendingSong = null;
     renderApp();
+}
+
+// YouTube API Functions
+async function fetchYouTubeInfo(url) {
+    try {
+        // Extract video ID from URL
+        const videoId = extractVideoId(url);
+        if (!videoId) {
+            throw new Error('Invalid YouTube URL');
+        }
+
+        // Use YouTube oEmbed API (no API key required)
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+        const response = await fetch(oembedUrl);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch video info');
+        }
+
+        const data = await response.json();
+        
+        // Get thumbnail (higher quality)
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        
+        // Parse title and artist (usually in format "Artist - Song Title")
+        let title = data.title;
+        let artist = data.author_name;
+        
+        // Try to split title if it contains common separators
+        if (title.includes(' - ')) {
+            const parts = title.split(' - ');
+            artist = parts[0].trim();
+            title = parts.slice(1).join(' - ').trim();
+        } else if (title.includes(' – ')) {
+            const parts = title.split(' – ');
+            artist = parts[0].trim();
+            title = parts.slice(1).join(' – ').trim();
+        }
+
+        return {
+            title,
+            artist,
+            album: 'YouTube',
+            thumbnail,
+            duration: 180, // Default duration as we can't get it without API key
+            videoId
+        };
+    } catch (error) {
+        console.error('Error fetching YouTube info:', error);
+        throw error;
+    }
+}
+
+function extractVideoId(url) {
+    // Handle various YouTube URL formats
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
+    ];
+
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+            return match[1];
+        }
+    }
+    
+    return null;
 }
 
 // Drag and Drop
@@ -414,29 +488,87 @@ elements.addSongBtn.addEventListener('click', () => {
 
 elements.modalClose.addEventListener('click', () => {
     elements.modal.classList.remove('active');
+    resetModal();
 });
 
 elements.cancelBtn.addEventListener('click', () => {
     elements.modal.classList.remove('active');
+    resetModal();
 });
 
-elements.addBtn.addEventListener('click', () => {
-    const title = document.getElementById('songTitle').value;
-    const artist = document.getElementById('songArtist').value;
-    const album = document.getElementById('songAlbum').value;
-    const duration = parseInt(document.getElementById('songDuration').value) || 180;
+// YouTube fetch button
+const fetchBtn = document.getElementById('fetchBtn');
+const youtubeInput = document.getElementById('youtubeUrl');
+const songPreview = document.getElementById('songPreview');
+const addSongBtn = document.getElementById('addSongBtn');
+const previewThumbnail = document.getElementById('previewThumbnail');
+const previewTitle = document.getElementById('previewTitle');
+const previewArtist = document.getElementById('previewArtist');
 
-    if (title && artist) {
-        addSong({ title, artist, album, duration });
-        elements.modal.classList.remove('active');
+fetchBtn.addEventListener('click', async () => {
+    const url = youtubeInput.value.trim();
+    if (!url) return;
+
+    fetchBtn.disabled = true;
+    fetchBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning">
+            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        Fetching...
+    `;
+
+    try {
+        const songData = await fetchYouTubeInfo(url);
+        state.pendingSong = songData;
         
-        // Clear inputs
-        document.getElementById('songTitle').value = '';
-        document.getElementById('songArtist').value = '';
-        document.getElementById('songAlbum').value = '';
-        document.getElementById('songDuration').value = '';
+        // Show preview
+        previewThumbnail.src = songData.thumbnail;
+        previewTitle.textContent = songData.title;
+        previewArtist.textContent = songData.artist;
+        songPreview.style.display = 'flex';
+        addSongBtn.disabled = false;
+        
+        fetchBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Fetched Successfully
+        `;
+        fetchBtn.style.background = 'var(--accent-purple)';
+    } catch (error) {
+        alert('Failed to fetch video info. Please check the URL and try again.');
+        fetchBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
+            Fetch Song Info
+        `;
+    } finally {
+        fetchBtn.disabled = false;
     }
 });
+
+addSongBtn.addEventListener('click', () => {
+    if (state.pendingSong) {
+        addSong(state.pendingSong);
+        elements.modal.classList.remove('active');
+        resetModal();
+    }
+});
+
+function resetModal() {
+    youtubeInput.value = '';
+    songPreview.style.display = 'none';
+    addSongBtn.disabled = true;
+    state.pendingSong = null;
+    fetchBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        Fetch Song Info
+    `;
+    fetchBtn.style.background = '';
+}
 
 elements.playBtn.addEventListener('click', togglePlayPause);
 elements.prevBtn.addEventListener('click', prevSong);
@@ -467,6 +599,7 @@ elements.searchInput.addEventListener('input', renderSearch);
 elements.modal.addEventListener('click', (e) => {
     if (e.target === elements.modal) {
         elements.modal.classList.remove('active');
+        resetModal();
     }
 });
 
