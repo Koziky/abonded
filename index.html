@@ -1,192 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GlassBeats - YouTube Music Player</title>
-    <meta name="description" content="Modern glassmorphic YouTube music player with playlists, queue management, and shuffle features">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GlassBeats - Music Player</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1 class="sidebar-title">🎵 GlassBeats</h1>
-                <button class="sidebar-close" id="sidebarClose">✕</button>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-view="home">
-                    <span class="nav-icon">🏠</span>
-                    <span>Home</span>
-                </a>
-                <a href="#" class="nav-item" data-view="library">
-                    <span class="nav-icon">📚</span>
-                    <span>Library</span>
-                </a>
-            </nav>
+  <div id="app" class="glass animate-float glass-highlight">
+    <h1>GlassBeats</h1>
+    <p>A modern glassmorphic music player UI</p>
 
-            <div class="sidebar-section">
-                <div class="section-header">
-                    <h3>Playlists</h3>
-                    <button class="btn-icon" id="createPlaylistBtn" title="Create Playlist">+</button>
-                </div>
-                <div class="playlists-list" id="playlistsList"></div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="header">
-                <button class="btn-icon" id="sidebarToggle">☰</button>
-                <h2 class="header-title" id="headerTitle">Home</h2>
-            </header>
-
-            <!-- Content Area -->
-            <div class="content-area" id="contentArea">
-                <!-- Home View -->
-                <div class="view" id="homeView">
-                    <div class="content-grid">
-                        <!-- Add Song Section -->
-                        <div class="add-song-section">
-                            <div class="glass-card">
-                                <h3 class="card-title">Add Music</h3>
-                                <p class="card-subtitle">Paste a YouTube URL to add to your queue</p>
-                                <div class="input-group">
-                                    <input 
-                                        type="text" 
-                                        id="youtubeUrl" 
-                                        class="input" 
-                                        placeholder="https://youtube.com/watch?v=..."
-                                    >
-                                    <button class="btn btn-primary" id="addSongBtn">Add Song</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Queue Section -->
-                        <div class="queue-section">
-                            <div class="glass-card">
-                                <div class="card-header">
-                                    <h3 class="card-title">Queue</h3>
-                                    <button class="btn-ghost" id="clearQueueBtn">Clear All</button>
-                                </div>
-                                <div class="queue-list" id="queueList">
-                                    <div class="empty-state">
-                                        <span class="empty-icon">🎵</span>
-                                        <p>Your queue is empty</p>
-                                        <p class="text-muted">Add some songs to get started</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Library View -->
-                <div class="view hidden" id="libraryView">
-                    <div class="library-header">
-                        <h1 class="library-title">Your Music</h1>
-                        <p class="library-subtitle" id="librarySongCount">0 songs</p>
-                    </div>
-                    <div class="glass-card">
-                        <div class="library-list" id="libraryList">
-                            <div class="empty-state">
-                                <span class="empty-icon">📀</span>
-                                <p>Your library is empty</p>
-                                <p class="text-muted">Add YouTube videos to start building your collection</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Player Bar -->
-            <div class="player-bar">
-                <div class="player-content">
-                    <!-- Now Playing -->
-                    <div class="now-playing">
-                        <div class="song-thumbnail" id="playerThumbnail">
-                            <span class="thumbnail-placeholder">🎵</span>
-                        </div>
-                        <div class="song-info">
-                            <div class="song-title" id="playerTitle">No song playing</div>
-                            <div class="song-artist" id="playerArtist">Select a song to start</div>
-                        </div>
-                    </div>
-
-                    <!-- Player Controls -->
-                    <div class="player-controls">
-                        <div class="control-buttons">
-                            <button class="btn-control" id="shuffleBtn" title="Shuffle">🔀</button>
-                            <button class="btn-control" id="prevBtn" title="Previous">⏮</button>
-                            <button class="btn-control btn-play" id="playBtn" title="Play">▶️</button>
-                            <button class="btn-control" id="nextBtn" title="Next">⏭</button>
-                            <button class="btn-control" id="repeatBtn" title="Repeat">🔁</button>
-                        </div>
-                        <div class="progress-bar">
-                            <span class="time-current" id="currentTime">0:00</span>
-                            <input 
-                                type="range" 
-                                class="seek-bar" 
-                                id="seekBar" 
-                                min="0" 
-                                max="100" 
-                                value="0"
-                            >
-                            <span class="time-duration" id="duration">0:00</span>
-                        </div>
-                    </div>
-
-                    <!-- Volume Control -->
-                    <div class="volume-control">
-                        <button class="btn-control" id="muteBtn" title="Mute">🔊</button>
-                        <input 
-                            type="range" 
-                            class="volume-bar" 
-                            id="volumeBar" 
-                            min="0" 
-                            max="100" 
-                            value="50"
-                        >
-                    </div>
-                </div>
-            </div>
-        </main>
+    <!-- Placeholder player UI -->
+    <div class="glass" style="padding: 20px; margin-top: 20px;">
+      <p>Player coming soon...</p>
     </div>
+  </div>
 
-    <!-- Create Playlist Modal -->
-    <div class="modal" id="createPlaylistModal">
-        <div class="modal-content glass-card">
-            <div class="modal-header">
-                <h3>Create New Playlist</h3>
-                <button class="btn-icon" id="closeModalBtn">✕</button>
-            </div>
-            <p class="text-muted">Give your playlist a name</p>
-            <input 
-                type="text" 
-                class="input" 
-                id="playlistNameInput" 
-                placeholder="My Playlist"
-                maxlength="50"
-            >
-            <div class="modal-footer">
-                <button class="btn btn-ghost" id="cancelPlaylistBtn">Cancel</button>
-                <button class="btn btn-primary" id="savePlaylistBtn">Create</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hidden YouTube Player -->
-    <div id="player" style="display: none;"></div>
-
-    <!-- YouTube IFrame API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
