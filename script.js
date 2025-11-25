@@ -1,607 +1,654 @@
-// App State
+// Music Player State
 const state = {
-    queue: [
-        { id: '1', title: 'Sample Song 1', artist: 'Artist Name', album: 'Album Name', duration: 195, thumbnail: '' },
-        { id: '2', title: 'Sample Song 2', artist: 'Another Artist', album: 'Another Album', duration: 223, thumbnail: '' }
-    ],
-    pendingSong: null,
-    playlists: [
-        { id: '1', name: 'My Favorites', songCount: 2, songs: ['1', '2'] },
-        { id: '2', name: 'Chill Vibes', songCount: 0, songs: [] }
-    ],
-    currentSongIndex: 0,
+    queue: [],
+    currentIndex: -1,
     isPlaying: false,
+    volume: 50,
     isShuffle: false,
     repeatMode: 'off', // 'off', 'all', 'one'
-    currentView: 'home',
-    selectedPlaylist: null,
-    progress: 0,
-    volume: 80,
-    isLiked: false
+    playlists: [],
+    currentPlaylist: null,
+    allSongs: [],
+    player: null,
+    currentTime: 0,
+    duration: 0,
+    previousVolume: 50
 };
 
-// DOM Elements
-const elements = {
-    navBtns: document.querySelectorAll('.nav-btn'),
-    views: document.querySelectorAll('.view'),
-    playlistList: document.querySelector('.playlist-list'),
-    queueList: document.querySelector('.queue-list'),
-    queueCount: document.querySelector('.queue-count'),
-    createPlaylistBtn: document.querySelector('.create-playlist-btn'),
-    addSongBtn: document.querySelector('.add-song-btn'),
-    modal: document.getElementById('addSongModal'),
-    modalClose: document.querySelector('.modal-close'),
-    cancelBtn: document.querySelector('.cancel-btn'),
-    playBtn: document.querySelector('.play-btn'),
-    prevBtn: document.querySelector('.prev-btn'),
-    nextBtn: document.querySelector('.next-btn'),
-    shuffleBtn: document.querySelector('.shuffle-btn'),
-    repeatBtn: document.querySelector('.repeat-btn'),
-    likeBtn: document.querySelector('.like-btn'),
-    progressSlider: document.querySelector('.progress-slider'),
-    volumeSlider: document.querySelector('.volume-slider'),
-    timeCurrent: document.querySelector('.time-current'),
-    timeTotal: document.querySelector('.time-total'),
-    songCover: document.querySelector('.song-cover'),
-    songTitle: document.querySelector('.song-title'),
-    songArtist: document.querySelector('.song-artist'),
-    searchInput: document.getElementById('searchInput'),
-    searchResults: document.querySelector('.search-results'),
-    libraryGrid: document.querySelector('.library-grid')
-};
+// YouTube Player
+let player;
+let updateInterval;
 
-// Utility Functions
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+        height: '0',
+        width: '0',
+        playerVars: {
+            autoplay: 0,
+            controls: 0
+        },
+        events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    state.player = player;
+    loadState();
+    updateUI();
+}
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.ENDED) {
+        playNext();
+    } else if (event.data === YT.PlayerState.PLAYING) {
+        state.isPlaying = true;
+        state.duration = player.getDuration();
+        startProgressUpdate();
+        updatePlayButton();
+    } else if (event.data === YT.PlayerState.PAUSED) {
+        state.isPlaying = false;
+        stopProgressUpdate();
+        updatePlayButton();
+    }
+}
+
+function startProgressUpdate() {
+    stopProgressUpdate();
+    updateInterval = setInterval(() => {
+        if (player && state.isPlaying) {
+            state.currentTime = player.getCurrentTime();
+            updateProgress();
+        }
+    }, 1000);
+}
+
+function stopProgressUpdate() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+    }
+}
+
+// Helper Functions
+function extractVideoId(url) {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+}
+
 function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function getCurrentSong() {
-    return state.queue[state.currentSongIndex] || null;
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Render Functions
-function renderQueue() {
-    const currentSong = getCurrentSong();
-    elements.queueCount.textContent = `${state.queue.length} songs`;
-    
-    elements.queueList.innerHTML = state.queue.map((song, index) => `
-        <div class="queue-item ${song.id === currentSong?.id ? 'active' : ''}" data-index="${index}">
-            <svg class="drag-handle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-            ${song.thumbnail ? `<img src="${song.thumbnail}" class="queue-item-thumbnail" alt="${song.title}">` : '<div class="queue-item-thumbnail">🎵</div>'}
-            <div class="queue-item-info">
-                <div class="queue-item-title">${song.title}${song.id === currentSong?.id ? ' <span style="color: var(--accent-purple)">Playing</span>' : ''}</div>
-                <div class="queue-item-artist">${song.artist}</div>
-            </div>
-            <span class="queue-item-duration">${formatTime(song.duration)}</span>
-            <div class="queue-item-actions">
-                <button class="queue-btn remove-btn" data-id="${song.id}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    `).join('');
-
-    // Add event listeners
-    document.querySelectorAll('.remove-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.id;
-            removeSong(id);
-        });
-    });
-
-    // Add drag and drop
-    initDragAndDrop();
+// State Management
+function saveState() {
+    const saveData = {
+        queue: state.queue,
+        currentIndex: state.currentIndex,
+        volume: state.volume,
+        isShuffle: state.isShuffle,
+        repeatMode: state.repeatMode,
+        playlists: state.playlists,
+        allSongs: state.allSongs
+    };
+    localStorage.setItem('musicPlayerState', JSON.stringify(saveData));
 }
 
-function renderPlaylists() {
-    elements.playlistList.innerHTML = state.playlists.map(playlist => `
-        <div class="playlist-item ${state.selectedPlaylist === playlist.id ? 'active' : ''}" data-id="${playlist.id}">
-            <div class="playlist-name">${playlist.name}</div>
-            <div class="playlist-count">${playlist.songCount} songs</div>
-        </div>
-    `).join('');
-
-    document.querySelectorAll('.playlist-item').forEach(item => {
-        item.addEventListener('click', () => {
-            state.selectedPlaylist = item.dataset.id;
-            state.currentView = 'home';
-            renderApp();
-        });
-    });
-}
-
-function renderLibrary() {
-    elements.libraryGrid.innerHTML = state.playlists.map(playlist => `
-        <div class="library-item" data-id="${playlist.id}">
-            <div class="library-cover">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6" cy="18" r="3"></circle>
-                    <circle cx="18" cy="16" r="3"></circle>
-                </svg>
-            </div>
-            <div class="library-name">${playlist.name}</div>
-            <div class="library-count">${playlist.songCount} song${playlist.songCount !== 1 ? 's' : ''}</div>
-        </div>
-    `).join('');
-
-    document.querySelectorAll('.library-item').forEach(item => {
-        item.addEventListener('click', () => {
-            state.selectedPlaylist = item.dataset.id;
-            state.currentView = 'home';
-            renderApp();
-        });
-    });
-}
-
-function renderPlayer() {
-    const song = getCurrentSong();
-    
-    if (song) {
-        if (song.thumbnail) {
-            elements.songCover.innerHTML = `<img src="${song.thumbnail}" alt="${song.title}">`;
-        } else {
-            elements.songCover.textContent = '🎵';
+function loadState() {
+    try {
+        const saved = localStorage.getItem('musicPlayerState');
+        if (saved) {
+            const data = JSON.parse(saved);
+            state.queue = data.queue || [];
+            state.currentIndex = data.currentIndex || -1;
+            state.volume = data.volume || 50;
+            state.isShuffle = data.isShuffle || false;
+            state.repeatMode = data.repeatMode || 'off';
+            state.playlists = data.playlists || [];
+            state.allSongs = data.allSongs || [];
+            
+            if (player) {
+                player.setVolume(state.volume);
+            }
         }
-        elements.songTitle.textContent = song.title;
-        elements.songArtist.textContent = song.artist;
-        elements.timeTotal.textContent = formatTime(song.duration);
-    } else {
-        elements.songCover.textContent = '🎵';
-        elements.songTitle.textContent = 'No song playing';
-        elements.songArtist.textContent = '';
-        elements.timeTotal.textContent = '0:00';
-    }
-
-    // Update play button
-    elements.playBtn.innerHTML = state.isPlaying 
-        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-               <rect x="6" y="4" width="4" height="16"></rect>
-               <rect x="14" y="4" width="4" height="16"></rect>
-           </svg>`
-        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-               <polygon points="5 3 19 12 5 21 5 3"></polygon>
-           </svg>`;
-
-    // Update shuffle button
-    if (state.isShuffle) {
-        elements.shuffleBtn.classList.add('active');
-    } else {
-        elements.shuffleBtn.classList.remove('active');
-    }
-
-    // Update repeat button
-    if (state.repeatMode !== 'off') {
-        elements.repeatBtn.classList.add('active');
-    } else {
-        elements.repeatBtn.classList.remove('active');
-    }
-
-    // Update like button
-    if (state.isLiked) {
-        elements.likeBtn.classList.add('liked');
-    } else {
-        elements.likeBtn.classList.remove('liked');
+    } catch (e) {
+        console.error('Error loading state:', e);
     }
 }
 
-function renderSearch() {
-    const query = elements.searchInput.value.toLowerCase();
-    
-    if (!query) {
-        elements.searchResults.innerHTML = `
-            <div style="text-align: center; color: var(--text-secondary); margin-top: 80px;">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5; margin: 0 auto 16px;">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <p style="font-size: 18px;">Start typing to search for songs</p>
-            </div>
-        `;
+// Song Management
+async function addSongFromUrl(url) {
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+        alert('Invalid YouTube URL');
         return;
     }
 
-    const results = state.queue.filter(song =>
-        song.title.toLowerCase().includes(query) ||
-        song.artist.toLowerCase().includes(query) ||
-        song.album.toLowerCase().includes(query)
-    );
-
-    if (results.length === 0) {
-        elements.searchResults.innerHTML = `
-            <div style="text-align: center; color: var(--text-secondary); margin-top: 80px;">
-                <p style="font-size: 18px;">No results found for "${query}"</p>
-            </div>
-        `;
+    // Check if song already exists
+    const exists = state.allSongs.find(s => s.youtubeId === videoId);
+    if (exists) {
+        addToQueue(exists);
         return;
     }
 
-    elements.searchResults.innerHTML = `
-        <h2 style="margin-bottom: 16px;">${results.length} result${results.length !== 1 ? 's' : ''} for "${query}"</h2>
-        ${results.map(song => `
-            <div class="search-result-item" data-id="${song.id}">
-                <div class="result-cover">🎵</div>
-                <div class="result-info">
-                    <div class="result-title">${song.title}</div>
-                    <div class="result-artist">${song.artist}</div>
-                </div>
-                <span class="result-duration">${formatTime(song.duration)}</span>
-            </div>
-        `).join('')}
-    `;
+    // Fetch video info
+    try {
+        const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+        const data = await response.json();
+        
+        const song = {
+            id: generateId(),
+            youtubeId: videoId,
+            title: data.title || 'Unknown Title',
+            artist: data.author_name || 'Unknown Artist',
+            thumbnail: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+        };
 
-    document.querySelectorAll('.search-result-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const song = state.queue.find(s => s.id === item.dataset.id);
-            playSong(song);
-        });
-    });
+        state.allSongs.push(song);
+        addToQueue(song);
+        saveState();
+        updateUI();
+    } catch (error) {
+        console.error('Error fetching video info:', error);
+        // Fallback
+        const song = {
+            id: generateId(),
+            youtubeId: videoId,
+            title: 'Unknown Title',
+            artist: 'Unknown Artist',
+            thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+        };
+        state.allSongs.push(song);
+        addToQueue(song);
+        saveState();
+        updateUI();
+    }
 }
 
-function renderApp() {
-    // Update navigation
-    elements.navBtns.forEach(btn => {
-        if (btn.dataset.view === state.currentView) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
+function addToQueue(song) {
+    state.queue.push(song);
+    if (state.currentIndex === -1) {
+        state.currentIndex = 0;
+        loadSong(0);
+    }
+    saveState();
+    updateUI();
+}
 
-    // Update views
-    elements.views.forEach(view => {
-        if (view.classList.contains(`${state.currentView}-view`)) {
-            view.classList.add('active');
+function removeFromQueue(index) {
+    state.queue.splice(index, 1);
+    if (index < state.currentIndex) {
+        state.currentIndex--;
+    } else if (index === state.currentIndex) {
+        if (state.queue.length === 0) {
+            state.currentIndex = -1;
+            stopPlayback();
         } else {
-            view.classList.remove('active');
+            state.currentIndex = Math.min(state.currentIndex, state.queue.length - 1);
+            loadSong(state.currentIndex);
         }
-    });
+    }
+    saveState();
+    updateUI();
+}
 
-    renderQueue();
-    renderPlaylists();
-    renderPlayer();
+function clearQueue() {
+    if (confirm('Clear all songs from queue?')) {
+        state.queue = [];
+        state.currentIndex = -1;
+        stopPlayback();
+        saveState();
+        updateUI();
+    }
+}
+
+// Playback Controls
+function loadSong(index) {
+    if (index < 0 || index >= state.queue.length) return;
     
-    if (state.currentView === 'library') {
-        renderLibrary();
-    } else if (state.currentView === 'search') {
-        renderSearch();
+    const song = state.queue[index];
+    state.currentIndex = index;
+    
+    if (player && player.loadVideoById) {
+        player.loadVideoById(song.youtubeId);
+        if (state.isPlaying) {
+            player.playVideo();
+        }
     }
-}
-
-// Player Functions
-function playSong(song) {
-    const index = state.queue.findIndex(s => s.id === song.id);
-    if (index !== -1) {
-        state.currentSongIndex = index;
-        state.isPlaying = true;
-        renderApp();
-    }
+    
+    updateNowPlaying();
+    updateQueueDisplay();
+    saveState();
 }
 
 function togglePlayPause() {
-    state.isPlaying = !state.isPlaying;
-    renderApp();
+    if (!player || state.queue.length === 0) return;
+    
+    if (state.currentIndex === -1 && state.queue.length > 0) {
+        state.currentIndex = 0;
+        loadSong(0);
+    }
+    
+    if (state.isPlaying) {
+        player.pauseVideo();
+    } else {
+        player.playVideo();
+    }
 }
 
-function nextSong() {
+function playNext() {
+    if (state.queue.length === 0) return;
+    
     if (state.repeatMode === 'one') {
+        loadSong(state.currentIndex);
         return;
     }
-
+    
+    let nextIndex;
     if (state.isShuffle) {
-        state.currentSongIndex = Math.floor(Math.random() * state.queue.length);
+        nextIndex = Math.floor(Math.random() * state.queue.length);
     } else {
-        const nextIndex = state.currentSongIndex + 1;
-        if (nextIndex < state.queue.length) {
-            state.currentSongIndex = nextIndex;
-        } else if (state.repeatMode === 'all') {
-            state.currentSongIndex = 0;
+        nextIndex = state.currentIndex + 1;
+        if (nextIndex >= state.queue.length) {
+            if (state.repeatMode === 'all') {
+                nextIndex = 0;
+            } else {
+                stopPlayback();
+                return;
+            }
         }
     }
-    renderApp();
+    
+    loadSong(nextIndex);
+    if (state.isPlaying) {
+        player.playVideo();
+    }
 }
 
-function prevSong() {
-    if (state.currentSongIndex > 0) {
-        state.currentSongIndex--;
-    } else if (state.repeatMode === 'all') {
-        state.currentSongIndex = state.queue.length - 1;
+function playPrevious() {
+    if (state.queue.length === 0) return;
+    
+    if (state.currentTime > 3) {
+        player.seekTo(0);
+        return;
     }
-    renderApp();
+    
+    let prevIndex = state.currentIndex - 1;
+    if (prevIndex < 0) {
+        prevIndex = state.repeatMode === 'all' ? state.queue.length - 1 : 0;
+    }
+    
+    loadSong(prevIndex);
+    if (state.isPlaying) {
+        player.playVideo();
+    }
+}
+
+function stopPlayback() {
+    if (player) {
+        player.stopVideo();
+    }
+    state.isPlaying = false;
+    stopProgressUpdate();
+    updatePlayButton();
 }
 
 function toggleShuffle() {
     state.isShuffle = !state.isShuffle;
-    renderApp();
+    document.getElementById('shuffleBtn').classList.toggle('active', state.isShuffle);
+    saveState();
 }
 
 function toggleRepeat() {
     const modes = ['off', 'all', 'one'];
-    const currentIndex = modes.indexOf(state.repeatMode);
-    state.repeatMode = modes[(currentIndex + 1) % modes.length];
-    renderApp();
+    const currentIdx = modes.indexOf(state.repeatMode);
+    state.repeatMode = modes[(currentIdx + 1) % modes.length];
+    
+    const btn = document.getElementById('repeatBtn');
+    btn.classList.toggle('active', state.repeatMode !== 'off');
+    btn.textContent = state.repeatMode === 'one' ? '🔂' : '🔁';
+    saveState();
 }
 
-function removeSong(id) {
-    const index = state.queue.findIndex(s => s.id === id);
-    state.queue = state.queue.filter(s => s.id !== id);
-    
-    if (state.currentSongIndex >= state.queue.length) {
-        state.currentSongIndex = Math.max(0, state.queue.length - 1);
-    } else if (index < state.currentSongIndex) {
-        state.currentSongIndex--;
+function setVolume(value) {
+    state.volume = value;
+    if (player) {
+        player.setVolume(value);
     }
-    
-    renderApp();
+    updateVolumeButton();
+    saveState();
 }
 
-function addSong(songData) {
-    const newSong = {
-        ...songData,
-        id: Date.now().toString()
+function toggleMute() {
+    if (state.volume === 0) {
+        setVolume(state.previousVolume);
+        document.getElementById('volumeBar').value = state.previousVolume;
+    } else {
+        state.previousVolume = state.volume;
+        setVolume(0);
+        document.getElementById('volumeBar').value = 0;
+    }
+}
+
+function seekTo(seconds) {
+    if (player) {
+        player.seekTo(seconds);
+        state.currentTime = seconds;
+        updateProgress();
+    }
+}
+
+// Playlist Management
+function createPlaylist(name) {
+    const playlist = {
+        id: generateId(),
+        name: name,
+        songs: []
     };
-    state.queue.push(newSong);
-    state.pendingSong = null;
-    renderApp();
+    state.playlists.push(playlist);
+    saveState();
+    updatePlaylistsDisplay();
 }
 
-// YouTube API Functions
-async function fetchYouTubeInfo(url) {
-    try {
-        // Extract video ID from URL
-        const videoId = extractVideoId(url);
-        if (!videoId) {
-            throw new Error('Invalid YouTube URL');
-        }
-
-        // Use YouTube oEmbed API (no API key required)
-        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
-        const response = await fetch(oembedUrl);
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch video info');
-        }
-
-        const data = await response.json();
-        
-        // Get thumbnail (higher quality)
-        const thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-        
-        // Parse title and artist (usually in format "Artist - Song Title")
-        let title = data.title;
-        let artist = data.author_name;
-        
-        // Try to split title if it contains common separators
-        if (title.includes(' - ')) {
-            const parts = title.split(' - ');
-            artist = parts[0].trim();
-            title = parts.slice(1).join(' - ').trim();
-        } else if (title.includes(' – ')) {
-            const parts = title.split(' – ');
-            artist = parts[0].trim();
-            title = parts.slice(1).join(' – ').trim();
-        }
-
-        return {
-            title,
-            artist,
-            album: 'YouTube',
-            thumbnail,
-            duration: 180, // Default duration as we can't get it without API key
-            videoId
-        };
-    } catch (error) {
-        console.error('Error fetching YouTube info:', error);
-        throw error;
-    }
-}
-
-function extractVideoId(url) {
-    // Handle various YouTube URL formats
-    const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-        /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
-    ];
-
-    for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) {
-            return match[1];
-        }
+function loadPlaylist(playlistId) {
+    const playlist = state.playlists.find(p => p.id === playlistId);
+    if (!playlist) return;
+    
+    state.currentPlaylist = playlistId;
+    state.queue = [...playlist.songs];
+    state.currentIndex = state.queue.length > 0 ? 0 : -1;
+    
+    if (state.currentIndex >= 0) {
+        loadSong(0);
     }
     
-    return null;
+    saveState();
+    updateUI();
 }
 
-// Drag and Drop
-function initDragAndDrop() {
-    const items = document.querySelectorAll('.queue-item');
-    let draggedItem = null;
-    let draggedIndex = null;
+// UI Updates
+function updateUI() {
+    updateQueueDisplay();
+    updateNowPlaying();
+    updatePlaylistsDisplay();
+    updateLibraryDisplay();
+}
 
-    items.forEach((item, index) => {
-        item.draggable = true;
-
-        item.addEventListener('dragstart', (e) => {
-            draggedItem = item;
-            draggedIndex = parseInt(item.dataset.index);
-            item.classList.add('dragging');
-        });
-
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            draggedItem = null;
-            draggedIndex = null;
-        });
-
-        item.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (draggedItem && draggedItem !== item) {
-                const targetIndex = parseInt(item.dataset.index);
-                const newQueue = [...state.queue];
-                const draggedSong = newQueue[draggedIndex];
-                
-                newQueue.splice(draggedIndex, 1);
-                newQueue.splice(targetIndex, 0, draggedSong);
-                
-                state.queue = newQueue;
-                draggedIndex = targetIndex;
-                renderQueue();
+function updateQueueDisplay() {
+    const queueList = document.getElementById('queueList');
+    
+    if (state.queue.length === 0) {
+        queueList.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">🎵</span>
+                <p>Your queue is empty</p>
+                <p class="text-muted">Add some songs to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    queueList.innerHTML = state.queue.map((song, index) => `
+        <div class="queue-item ${index === state.currentIndex ? 'active' : ''}" data-index="${index}">
+            <img src="${song.thumbnail}" alt="${song.title}" class="queue-thumbnail">
+            <div class="song-info">
+                <div class="song-title">${song.title}</div>
+                <div class="song-artist">${song.artist}</div>
+            </div>
+            <button class="btn-remove" data-index="${index}">✕</button>
+        </div>
+    `).join('');
+    
+    // Add event listeners
+    document.querySelectorAll('.queue-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('btn-remove')) {
+                const index = parseInt(item.dataset.index);
+                loadSong(index);
+                if (!state.isPlaying) {
+                    togglePlayPause();
+                }
             }
         });
+    });
+    
+    document.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const index = parseInt(btn.dataset.index);
+            removeFromQueue(index);
+        });
+    });
+}
+
+function updateNowPlaying() {
+    const song = state.queue[state.currentIndex];
+    const thumbnail = document.getElementById('playerThumbnail');
+    const title = document.getElementById('playerTitle');
+    const artist = document.getElementById('playerArtist');
+    
+    if (song) {
+        thumbnail.innerHTML = `<img src="${song.thumbnail}" alt="${song.title}">`;
+        title.textContent = song.title;
+        artist.textContent = song.artist;
+    } else {
+        thumbnail.innerHTML = '<span class="thumbnail-placeholder">🎵</span>';
+        title.textContent = 'No song playing';
+        artist.textContent = 'Select a song to start';
+    }
+}
+
+function updatePlayButton() {
+    const playBtn = document.getElementById('playBtn');
+    playBtn.textContent = state.isPlaying ? '⏸️' : '▶️';
+}
+
+function updateProgress() {
+    const seekBar = document.getElementById('seekBar');
+    const currentTimeEl = document.getElementById('currentTime');
+    
+    currentTimeEl.textContent = formatTime(state.currentTime);
+    document.getElementById('duration').textContent = formatTime(state.duration);
+    
+    if (state.duration > 0) {
+        seekBar.max = state.duration;
+        seekBar.value = state.currentTime;
+    }
+}
+
+function updateVolumeButton() {
+    const muteBtn = document.getElementById('muteBtn');
+    if (state.volume === 0) {
+        muteBtn.textContent = '🔇';
+    } else if (state.volume < 50) {
+        muteBtn.textContent = '🔉';
+    } else {
+        muteBtn.textContent = '🔊';
+    }
+}
+
+function updatePlaylistsDisplay() {
+    const playlistsList = document.getElementById('playlistsList');
+    
+    if (state.playlists.length === 0) {
+        playlistsList.innerHTML = '<p class="text-muted" style="padding: 1rem;">No playlists yet</p>';
+        return;
+    }
+    
+    playlistsList.innerHTML = state.playlists.map(playlist => `
+        <div class="playlist-item ${state.currentPlaylist === playlist.id ? 'active' : ''}" data-id="${playlist.id}">
+            <span>📝 ${playlist.name}</span>
+            <span class="text-muted">${playlist.songs.length}</span>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('.playlist-item').forEach(item => {
+        item.addEventListener('click', () => {
+            loadPlaylist(item.dataset.id);
+        });
+    });
+}
+
+function updateLibraryDisplay() {
+    const libraryList = document.getElementById('libraryList');
+    const songCount = document.getElementById('librarySongCount');
+    
+    songCount.textContent = `${state.allSongs.length} song${state.allSongs.length !== 1 ? 's' : ''}`;
+    
+    if (state.allSongs.length === 0) {
+        libraryList.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">📀</span>
+                <p>Your library is empty</p>
+                <p class="text-muted">Add YouTube videos to start building your collection</p>
+            </div>
+        `;
+        return;
+    }
+    
+    libraryList.innerHTML = state.allSongs.map(song => `
+        <div class="queue-item" data-id="${song.id}">
+            <img src="${song.thumbnail}" alt="${song.title}" class="queue-thumbnail">
+            <div class="song-info">
+                <div class="song-title">${song.title}</div>
+                <div class="song-artist">${song.artist}</div>
+            </div>
+            <button class="btn btn-ghost" data-id="${song.id}">Add to Queue</button>
+        </div>
+    `).join('');
+    
+    document.querySelectorAll('#libraryList .btn-ghost').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const song = state.allSongs.find(s => s.id === btn.dataset.id);
+            if (song) addToQueue(song);
+        });
+    });
+}
+
+// View Management
+function switchView(viewName) {
+    document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
+    document.getElementById(`${viewName}View`).classList.remove('hidden');
+    document.getElementById('headerTitle').textContent = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.view === viewName);
     });
 }
 
 // Event Listeners
-elements.navBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        state.currentView = btn.dataset.view;
-        state.selectedPlaylist = null;
-        renderApp();
+document.addEventListener('DOMContentLoaded', () => {
+    // Add Song
+    document.getElementById('addSongBtn').addEventListener('click', () => {
+        const url = document.getElementById('youtubeUrl').value.trim();
+        if (url) {
+            addSongFromUrl(url);
+            document.getElementById('youtubeUrl').value = '';
+        }
     });
+    
+    document.getElementById('youtubeUrl').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('addSongBtn').click();
+        }
+    });
+    
+    // Player Controls
+    document.getElementById('playBtn').addEventListener('click', togglePlayPause);
+    document.getElementById('nextBtn').addEventListener('click', playNext);
+    document.getElementById('prevBtn').addEventListener('click', playPrevious);
+    document.getElementById('shuffleBtn').addEventListener('click', toggleShuffle);
+    document.getElementById('repeatBtn').addEventListener('click', toggleRepeat);
+    
+    // Volume
+    document.getElementById('volumeBar').addEventListener('input', (e) => {
+        setVolume(parseInt(e.target.value));
+    });
+    document.getElementById('muteBtn').addEventListener('click', toggleMute);
+    
+    // Seek
+    document.getElementById('seekBar').addEventListener('input', (e) => {
+        seekTo(parseFloat(e.target.value));
+    });
+    
+    // Queue
+    document.getElementById('clearQueueBtn').addEventListener('click', clearQueue);
+    
+    // Sidebar
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.add('open');
+    });
+    
+    document.getElementById('sidebarClose').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('open');
+    });
+    
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(item.dataset.view);
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+    });
+    
+    // Playlist Modal
+    document.getElementById('createPlaylistBtn').addEventListener('click', () => {
+        document.getElementById('createPlaylistModal').classList.add('open');
+        document.getElementById('playlistNameInput').focus();
+    });
+    
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+        document.getElementById('createPlaylistModal').classList.remove('open');
+        document.getElementById('playlistNameInput').value = '';
+    });
+    
+    document.getElementById('cancelPlaylistBtn').addEventListener('click', () => {
+        document.getElementById('createPlaylistModal').classList.remove('open');
+        document.getElementById('playlistNameInput').value = '';
+    });
+    
+    document.getElementById('savePlaylistBtn').addEventListener('click', () => {
+        const name = document.getElementById('playlistNameInput').value.trim();
+        if (name) {
+            createPlaylist(name);
+            document.getElementById('createPlaylistModal').classList.remove('open');
+            document.getElementById('playlistNameInput').value = '';
+        }
+    });
+    
+    document.getElementById('playlistNameInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('savePlaylistBtn').click();
+        }
+    });
+    
+    // Close modal on background click
+    document.getElementById('createPlaylistModal').addEventListener('click', (e) => {
+        if (e.target.id === 'createPlaylistModal') {
+            document.getElementById('createPlaylistModal').classList.remove('open');
+        }
+    });
+    
+    // Initialize
+    updateUI();
 });
-
-elements.createPlaylistBtn.addEventListener('click', () => {
-    const newPlaylist = {
-        id: Date.now().toString(),
-        name: `New Playlist ${state.playlists.length + 1}`,
-        songCount: 0,
-        songs: []
-    };
-    state.playlists.push(newPlaylist);
-    renderApp();
-});
-
-elements.addSongBtn.addEventListener('click', () => {
-    elements.modal.classList.add('active');
-});
-
-elements.modalClose.addEventListener('click', () => {
-    elements.modal.classList.remove('active');
-    resetModal();
-});
-
-elements.cancelBtn.addEventListener('click', () => {
-    elements.modal.classList.remove('active');
-    resetModal();
-});
-
-// YouTube fetch button
-const fetchBtn = document.getElementById('fetchBtn');
-const youtubeInput = document.getElementById('youtubeUrl');
-const songPreview = document.getElementById('songPreview');
-const addSongBtn = document.getElementById('addSongBtn');
-const previewThumbnail = document.getElementById('previewThumbnail');
-const previewTitle = document.getElementById('previewTitle');
-const previewArtist = document.getElementById('previewArtist');
-
-fetchBtn.addEventListener('click', async () => {
-    const url = youtubeInput.value.trim();
-    if (!url) return;
-
-    fetchBtn.disabled = true;
-    fetchBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinning">
-            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        Fetching...
-    `;
-
-    try {
-        const songData = await fetchYouTubeInfo(url);
-        state.pendingSong = songData;
-        
-        // Show preview
-        previewThumbnail.src = songData.thumbnail;
-        previewTitle.textContent = songData.title;
-        previewArtist.textContent = songData.artist;
-        songPreview.style.display = 'flex';
-        addSongBtn.disabled = false;
-        
-        fetchBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Fetched Successfully
-        `;
-        fetchBtn.style.background = 'var(--accent-purple)';
-    } catch (error) {
-        alert('Failed to fetch video info. Please check the URL and try again.');
-        fetchBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-            </svg>
-            Fetch Song Info
-        `;
-    } finally {
-        fetchBtn.disabled = false;
-    }
-});
-
-addSongBtn.addEventListener('click', () => {
-    if (state.pendingSong) {
-        addSong(state.pendingSong);
-        elements.modal.classList.remove('active');
-        resetModal();
-    }
-});
-
-function resetModal() {
-    youtubeInput.value = '';
-    songPreview.style.display = 'none';
-    addSongBtn.disabled = true;
-    state.pendingSong = null;
-    fetchBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        Fetch Song Info
-    `;
-    fetchBtn.style.background = '';
-}
-
-elements.playBtn.addEventListener('click', togglePlayPause);
-elements.prevBtn.addEventListener('click', prevSong);
-elements.nextBtn.addEventListener('click', nextSong);
-elements.shuffleBtn.addEventListener('click', toggleShuffle);
-elements.repeatBtn.addEventListener('click', toggleRepeat);
-elements.likeBtn.addEventListener('click', () => {
-    state.isLiked = !state.isLiked;
-    renderApp();
-});
-
-elements.progressSlider.addEventListener('input', (e) => {
-    state.progress = parseInt(e.target.value);
-    const song = getCurrentSong();
-    if (song) {
-        const currentTime = (state.progress / 100) * song.duration;
-        elements.timeCurrent.textContent = formatTime(currentTime);
-    }
-});
-
-elements.volumeSlider.addEventListener('input', (e) => {
-    state.volume = parseInt(e.target.value);
-});
-
-elements.searchInput.addEventListener('input', renderSearch);
-
-// Close modal on outside click
-elements.modal.addEventListener('click', (e) => {
-    if (e.target === elements.modal) {
-        elements.modal.classList.remove('active');
-        resetModal();
-    }
-});
-
-// Initialize
-renderApp();
