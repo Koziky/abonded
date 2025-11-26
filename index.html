@@ -4,79 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GlassBeats - YouTube Music Player</title>
-    <meta name="description" content="Modern glassmorphic YouTube music player with playlists, queue management, and shuffle features">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="root">
-        <div class="container">
-            <header class="header glass">
-                <h1 class="title">
-                    <span class="icon">🎵</span>
-                    GlassBeats
-                </h1>
-                <p class="subtitle">Your Premium Music Experience</p>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">GlassBeats</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-page="home">
+                    <span class="nav-icon">🏠</span>
+                    <span>Home</span>
+                </button>
+                <button class="nav-item" id="yourMusicBtn">
+                    <span class="nav-icon">🎵</span>
+                    <span>Your Music</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h3>Playlists</h3>
+                    <button class="icon-btn" id="createPlaylistBtn">➕</button>
+                </div>
+                <div id="playlistsList" class="playlists-list"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h2 class="page-title">Home</h2>
             </header>
 
-            <main class="main-content">
-                <div class="player-section glass glass-highlight">
-                    <div class="video-container" id="videoContainer">
-                        <div id="player"></div>
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="content-grid">
+                    <!-- Add Song Section -->
+                    <div class="add-song-section glass">
+                        <h3 class="section-title">
+                            <span class="icon">🔗</span>
+                            Add from YouTube
+                        </h3>
+                        <form id="addSongForm" class="add-song-form">
+                            <input
+                                type="text"
+                                id="youtubeUrl"
+                                placeholder="Paste YouTube URL here..."
+                                class="url-input"
+                            />
+                            <button type="submit" class="add-btn">➕</button>
+                        </form>
+                        <p class="hint-text">Paste any YouTube video URL to add it to your queue</p>
                     </div>
-                    
-                    <div class="player-controls">
-                        <div class="track-info">
-                            <h2 id="currentTrack">No track playing</h2>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill"></div>
-                            </div>
-                            <div class="time-info">
-                                <span id="currentTime">0:00</span>
-                                <span id="duration">0:00</span>
-                            </div>
+
+                    <!-- Playlists Manager -->
+                    <div class="playlist-manager glass">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <span class="icon">📋</span>
+                                Playlists
+                            </h3>
                         </div>
-                        
-                        <div class="controls">
+                        <div id="playlistsManager" class="playlists-content"></div>
+                    </div>
+                </div>
+
+                <!-- Queue Section -->
+                <div class="queue-section glass">
+                    <h3 class="section-title">Queue</h3>
+                    <div id="queueList" class="queue-list"></div>
+                </div>
+            </div>
+
+            <!-- Player Bar -->
+            <div class="player-bar">
+                <div class="player-container">
+                    <!-- Now Playing -->
+                    <div class="now-playing">
+                        <div id="nowPlayingContent"></div>
+                    </div>
+
+                    <!-- Player Controls -->
+                    <div class="player-controls">
+                        <div class="controls-buttons">
+                            <button class="control-btn" id="shuffleBtn" title="Shuffle">🔀</button>
                             <button class="control-btn" id="prevBtn" title="Previous">⏮️</button>
                             <button class="control-btn play-btn" id="playBtn" title="Play/Pause">▶️</button>
                             <button class="control-btn" id="nextBtn" title="Next">⏭️</button>
-                            <button class="control-btn" id="shuffleBtn" title="Shuffle">🔀</button>
                             <button class="control-btn" id="repeatBtn" title="Repeat">🔁</button>
                         </div>
-                        
-                        <div class="volume-control">
-                            <span>🔊</span>
-                            <input type="range" id="volumeSlider" min="0" max="100" value="70">
+                        <div class="progress-container">
+                            <span class="time-display" id="currentTime">0:00</span>
+                            <input type="range" id="progressBar" class="progress-slider" min="0" max="100" value="0">
+                            <span class="time-display" id="duration">0:00</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="playlist-section glass">
-                    <div class="playlist-header">
-                        <h3>Add YouTube Video</h3>
-                        <div class="add-video">
-                            <input type="text" id="videoUrl" placeholder="Paste YouTube URL here..." class="url-input">
-                            <button id="addBtn" class="add-btn">Add</button>
-                        </div>
-                    </div>
-                    
-                    <div class="playlist-tabs">
-                        <button class="tab-btn active" data-tab="queue">Queue</button>
-                        <button class="tab-btn" data-tab="playlist">Playlist</button>
-                    </div>
-                    
-                    <div class="tab-content active" id="queueTab">
-                        <ul id="queueList" class="track-list"></ul>
-                    </div>
-                    
-                    <div class="tab-content" id="playlistTab">
-                        <ul id="playlistList" class="track-list"></ul>
+                    <!-- Volume Control -->
+                    <div class="volume-control">
+                        <button class="control-btn" id="muteBtn" title="Mute">🔊</button>
+                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
                     </div>
                 </div>
-            </main>
+            </div>
+        </main>
+
+        <!-- Hidden YouTube Player -->
+        <div id="playerContainer" style="display: none;"></div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div id="createPlaylistModal" class="modal">
+        <div class="modal-content glass">
+            <h2 class="modal-title">Create New Playlist</h2>
+            <p class="modal-description">Give your playlist a name</p>
+            <input type="text" id="newPlaylistName" class="modal-input" placeholder="My Playlist">
+            <div class="modal-actions">
+                <button class="modal-btn btn-secondary" id="cancelPlaylistBtn">Cancel</button>
+                <button class="modal-btn btn-primary" id="confirmPlaylistBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Music Modal -->
+    <div id="yourMusicModal" class="modal">
+        <div class="modal-content glass modal-large">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title">Your Music</h2>
+                    <p class="modal-description" id="musicCount">0 songs in your library</p>
+                </div>
+                <button class="modal-close" id="closeYourMusicBtn">✕</button>
+            </div>
+            <div id="yourMusicGrid" class="music-grid"></div>
         </div>
     </div>
 
